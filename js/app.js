@@ -5,7 +5,7 @@
   const { ROWS, COLS, EMPTY, HUMAN, AI, WIN_SCORE } = AI_LIB;
 
   const state = {
-    view: 'menu', // 'menu' | 'game'
+    view: 'home', // 'home' | 'setup' | 'game'
     gameMode: 'hvb', // 'hvb' | 'bvb'
     difficulty: 'Hard', // 'Easy' | 'Medium' | 'Hard' | 'Custom'
     firstPlayer: HUMAN, // 1 | 2
@@ -47,22 +47,31 @@
 
   const els = {
     // Views
-    menuView: document.getElementById('menuView'),
+    homeView: document.getElementById('homeView'),
+    setupView: document.getElementById('setupView'),
     gameView: document.getElementById('gameView'),
     arenaShell: document.getElementById('arenaShell'),
 
-    // Main Menu
+    // Home Menu
+    goSetupBtn: document.getElementById('goSetupBtn'),
+    openRulesBtn: document.getElementById('openRulesBtn'),
+    openInfoBtn: document.getElementById('openInfoBtn'),
+
+    // Setup Menu
+    backHomeBtn: document.getElementById('backHomeBtn'),
+    setupPreviewBadge: document.getElementById('setupPreviewBadge'),
     modeChoiceGrid: document.getElementById('modeChoiceGrid'),
     diffChoiceGrid: document.getElementById('diffChoiceGrid'),
     firstChoiceGrid: document.getElementById('firstChoiceGrid'),
-    firstP1Hint: document.getElementById('firstP1Hint'),
+    firstP1Title: document.getElementById('firstP1Title'),
     customConfigBox: document.getElementById('customConfigBox'),
     algorithmSelect: document.getElementById('algorithmSelect'),
     depthSelect: document.getElementById('depthSelect'),
     startGameBtn: document.getElementById('startGameBtn'),
-    openInfoBtn: document.getElementById('openInfoBtn'),
 
-    // Modal
+    // Modals
+    rulesModal: document.getElementById('rulesModal'),
+    closeRulesBtn: document.getElementById('closeRulesBtn'),
     infoModal: document.getElementById('infoModal'),
     closeInfoBtn: document.getElementById('closeInfoBtn'),
     modalLegendList: document.getElementById('modalLegendList'),
@@ -70,6 +79,7 @@
     // Arena
     arenaPill: document.getElementById('arenaPill'),
     backMenuBtn: document.getElementById('backMenuBtn'),
+    backSetupBtn: document.getElementById('backSetupBtn'),
     activeConfigBadge: document.getElementById('activeConfigBadge'),
     turnCounterBadge: document.getElementById('turnCounterBadge'),
     undoBtn: document.getElementById('undoBtn'),
@@ -147,11 +157,11 @@
       btn.classList.toggle('active', Number(btn.dataset.first) === state.firstPlayer);
     });
 
-    els.firstP1Hint.textContent =
-      state.gameMode === 'bvb' ? 'Bot Coral (Depth 3) jalan pertama' : 'Manusia jalan pertama';
+    els.firstP1Title.textContent = state.gameMode === 'bvb' ? 'Bot Coral' : 'Manusia';
     els.customConfigBox.style.display = state.difficulty === 'Custom' ? 'block' : 'none';
 
     const cfg = getAiConfig();
+    els.setupPreviewBadge.textContent = cfg.label;
     els.activeConfigBadge.textContent = cfg.label;
   }
 
@@ -173,7 +183,8 @@
 
   function switchView(viewName) {
     state.view = viewName;
-    els.menuView.style.display = viewName === 'menu' ? 'block' : 'none';
+    els.homeView.style.display = viewName === 'home' ? 'flex' : 'none';
+    els.setupView.style.display = viewName === 'setup' ? 'flex' : 'none';
     els.gameView.style.display = viewName === 'game' ? 'block' : 'none';
   }
 
@@ -405,7 +416,7 @@
     els.bvbBar.style.display = isBvb && !state.gameOver ? 'flex' : 'none';
     els.autoPlayBtn.textContent = state.autoPlayPaused ? 'Lanjut Auto-Play' : 'Jeda Auto-Play';
 
-    els.turnCounterBadge.textContent = `Langkah #${state.moveCount}`;
+    els.turnCounterBadge.textContent = `#${state.moveCount}`;
     els.undoBtn.disabled = state.history.length === 0 || state.isThinking;
 
     if (state.lastAiResult) {
@@ -718,10 +729,17 @@
     resetGame();
   }
 
-  function goToMenu() {
+  function goToHome() {
     state.matchGeneration += 1;
     clearTimers();
-    switchView('menu');
+    switchView('home');
+  }
+
+  function goToSetup() {
+    state.matchGeneration += 1;
+    clearTimers();
+    syncMenuUI();
+    switchView('setup');
   }
 
   function undoMove() {
@@ -831,9 +849,12 @@
     els.algorithmSelect.addEventListener('change', syncMenuUI);
     els.depthSelect.addEventListener('change', syncMenuUI);
 
+    els.goSetupBtn.addEventListener('click', goToSetup);
+    els.backHomeBtn.addEventListener('click', goToHome);
     els.startGameBtn.addEventListener('click', startNewMatchFromMenu);
-    els.backMenuBtn.addEventListener('click', goToMenu);
-    els.postMenuBtn.addEventListener('click', goToMenu);
+    els.backMenuBtn.addEventListener('click', goToHome);
+    els.backSetupBtn.addEventListener('click', goToSetup);
+    els.postMenuBtn.addEventListener('click', goToHome);
     els.playAgainBtn.addEventListener('click', resetGame);
     els.resetBtn.addEventListener('click', resetGame);
     els.undoBtn.addEventListener('click', undoMove);
@@ -851,6 +872,18 @@
     els.autoPlayBtn.addEventListener('click', toggleAutoPlay);
     els.compareBtn.addEventListener('click', runPostGameComparison);
 
+    els.openRulesBtn.addEventListener('click', () => {
+      els.rulesModal.style.display = 'flex';
+    });
+    els.closeRulesBtn.addEventListener('click', () => {
+      els.rulesModal.style.display = 'none';
+    });
+    els.rulesModal.addEventListener('click', (e) => {
+      if (e.target === els.rulesModal) {
+        els.rulesModal.style.display = 'none';
+      }
+    });
+
     els.openInfoBtn.addEventListener('click', () => {
       renderScoringLegend(els.modalLegendList, null, null);
       els.infoModal.style.display = 'flex';
@@ -865,9 +898,15 @@
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && els.infoModal.style.display === 'flex') {
-        els.infoModal.style.display = 'none';
-        return;
+      if (e.key === 'Escape') {
+        if (els.rulesModal.style.display === 'flex') {
+          els.rulesModal.style.display = 'none';
+          return;
+        }
+        if (els.infoModal.style.display === 'flex') {
+          els.infoModal.style.display = 'none';
+          return;
+        }
       }
       if (state.view !== 'game' || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
       if (e.key >= '0' && e.key <= '6') {
@@ -878,5 +917,5 @@
 
   syncMenuUI();
   bindEvents();
-  switchView('menu');
+  switchView('home');
 })();
