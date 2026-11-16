@@ -8,6 +8,7 @@
     view: 'home', // 'home' | 'setup' | 'game'
     gameMode: 'hvb', // 'hvb' | 'bvb'
     boardMode: 'classic', // 'classic' | 'obstacle' | 'star'
+    boardSize: '6x7', // '6x7' | '7x8' | '7x9'
     tileShape: 'circle', // 'circle' | 'square'
     difficulty: 'Hard', // 'Easy' | 'Medium' | 'Hard' | 'Custom'
     firstChoice: '1', // '1' | '2' | 'random'
@@ -69,6 +70,7 @@
     setupPreviewBadge: document.getElementById('setupPreviewBadge'),
     modeChoiceGrid: document.getElementById('modeChoiceGrid'),
     boardModeGrid: document.getElementById('boardModeGrid'),
+    boardSizeGrid: document.getElementById('boardSizeGrid'),
     tileShapeGrid: document.getElementById('tileShapeGrid'),
     diffChoiceGrid: document.getElementById('diffChoiceGrid'),
     firstChoiceGrid: document.getElementById('firstChoiceGrid'),
@@ -198,6 +200,11 @@
     els.boardModeGrid.querySelectorAll('.choice-card').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.bmode === state.boardMode);
     });
+    if (els.boardSizeGrid) {
+      els.boardSizeGrid.querySelectorAll('.size-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.size === state.boardSize);
+      });
+    }
     els.tileShapeGrid.querySelectorAll('.shape-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.shape === state.tileShape);
     });
@@ -213,8 +220,9 @@
 
     const cfg = getAiConfig();
     const modeTag = state.boardMode === 'classic' ? '' : state.boardMode === 'obstacle' ? ' • Batu' : ' • Star';
-    els.setupPreviewBadge.textContent = `${cfg.label}${modeTag}`;
-    els.activeConfigBadge.textContent = `${cfg.label}${modeTag}`;
+    const sizeTag = state.boardSize === '6x7' ? '' : ` • ${state.boardSize}`;
+    els.setupPreviewBadge.textContent = `${cfg.label}${modeTag}${sizeTag}`;
+    els.activeConfigBadge.textContent = `${cfg.label}${modeTag}${sizeTag}`;
   }
 
   function clearTimers() {
@@ -390,15 +398,23 @@
     const isBvb = state.gameMode === 'bvb';
     const humanCanClick = !state.gameOver && !state.isThinking && !isBvb && state.currentPlayer === HUMAN;
     const isSquare = state.tileShape === 'square';
+    const rows = state.board.length;
+    const cols = state.board[0].length;
 
     els.boardGrid.classList.toggle('shape-square', isSquare);
     els.p1Swatch.classList.toggle('shape-square', isSquare);
     els.p2Swatch.classList.toggle('shape-square', isSquare);
     els.statusDot.classList.toggle('shape-square', isSquare);
 
+    [els.hoverPreviewRow, els.colSelectors, els.boardGrid].forEach((el) => {
+      if (!el || !el.style) return;
+      el.style.setProperty('--board-cols', String(cols));
+      el.style.setProperty('--board-rows', String(rows));
+    });
+
     // Ghost Hover Preview Row
     els.hoverPreviewRow.innerHTML = '';
-    for (let c = 0; c < COLS; c++) {
+    for (let c = 0; c < cols; c++) {
       const slot = document.createElement('div');
       slot.className = 'ghost-slot';
       const ghost = document.createElement('div');
@@ -410,7 +426,7 @@
 
     // Column selector buttons
     els.colSelectors.innerHTML = '';
-    for (let c = 0; c < COLS; c++) {
+    for (let c = 0; c < cols; c++) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'col-btn';
@@ -427,10 +443,10 @@
       els.colSelectors.appendChild(btn);
     }
 
-    // 6x7 Grid
+    // Dynamic Grid (6x7 / 7x8 / 7x9)
     els.boardGrid.innerHTML = '';
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.row = String(r);
@@ -582,12 +598,13 @@
     }
 
     const prefix = state.moveCount === 0 && state.randomStartNote ? `${state.randomStartNote} ` : '';
+    const cols = state.board[0].length;
     if (state.currentPlayer === HUMAN) {
       els.statusBanner.classList.add('turn-p1');
       els.statusDot.classList.add('p1');
       els.statusText.textContent = isBvb
         ? `${prefix}Giliran Bot Coral...`
-        : `${prefix}Giliran Anda — Pilih Kolom 0–6`;
+        : `${prefix}Giliran Anda — Pilih Kolom 0–${cols - 1}`;
     } else {
       els.statusBanner.classList.add('turn-p2');
       els.statusDot.classList.add('p2');
@@ -824,7 +841,8 @@
     state.matchGeneration += 1;
     clearTimers();
 
-    const setup = AI_LIB.createSpecialSetup(state.boardMode);
+    const dims = (AI_LIB.BOARD_SIZES && AI_LIB.BOARD_SIZES[state.boardSize]) || { rows: ROWS, cols: COLS };
+    const setup = AI_LIB.createSpecialSetup(state.boardMode, dims.rows, dims.cols);
     state.board = setup.board;
     state.starCells = setup.starCells;
 
@@ -982,6 +1000,16 @@
       pulsePickedCard(btn);
     });
 
+    if (els.boardSizeGrid) {
+      els.boardSizeGrid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.size-btn');
+        if (!btn) return;
+        state.boardSize = btn.dataset.size;
+        syncMenuUI();
+        pulsePickedCard(btn);
+      });
+    }
+
     els.tileShapeGrid.addEventListener('click', (e) => {
       const btn = e.target.closest('.shape-btn');
       if (!btn) return;
@@ -1058,7 +1086,8 @@
         }
       }
       if (state.view !== 'game' || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
-      if (e.key >= '0' && e.key <= '6') {
+      const maxColKey = String(state.board[0].length - 1);
+      if (e.key >= '0' && e.key <= maxColKey) {
         handleHumanMove(Number(e.key));
       }
     });

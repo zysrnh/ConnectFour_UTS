@@ -187,13 +187,22 @@
               <button type="button" class="choice-card tile-mode-card" data-bmode="obstacle">
                 <span class="tile-badge stone">&#x2715;</span>
                 <strong>Obstacle</strong>
-                <span>4 batu rintangan</span>
+                <span>Batu rintangan</span>
               </button>
               <button type="button" class="choice-card tile-mode-card" data-bmode="star">
                 <span class="tile-badge star">&#9733;</span>
                 <strong>Star +6</strong>
-                <span>3 petak bonus</span>
+                <span>Petak bonus</span>
               </button>
+            </div>
+
+            <div class="board-size-bar">
+              <span class="size-label">Ukuran Papan:</span>
+              <div class="size-toggle" id="boardSizeGrid" role="group" aria-label="Ukuran Papan">
+                <button type="button" class="size-btn active" data-size="6x7">6×7 Standar</button>
+                <button type="button" class="size-btn" data-size="7x8">7×8 Luas</button>
+                <button type="button" class="size-btn" data-size="7x9">7×9 Ekstra</button>
+              </div>
             </div>
           </div>
 
@@ -452,15 +461,15 @@
       <div class="flow-steps">
         <div class="flow-step">
           <span class="flow-num">1</span>
-          <div><strong>Setup:</strong> Pilih Mode, Tipe Papan (<em>Klasik</em>, <em>Obstacle</em>, atau <em>Star</em>), Bentuk Tiles (<em>Bulat / Kotak</em>), Level AI, &amp; giliran pertama (bisa <strong>Acak</strong>).</div>
+          <div><strong>Setup:</strong> Pilih Mode, Tipe Papan (<em>Klasik</em>, <em>Obstacle</em>, <em>Star</em>), Ukuran (<em>6×7</em>, <em>7×8</em>, <em>7×9</em>), Bentuk Tiles, Level AI, &amp; giliran pertama (bisa <strong>Acak</strong>).</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">2</span>
-          <div><strong>Jatuhkan Bidak:</strong> Klik kolom <code>K0–K6</code> (atau keyboard <code>0–6</code>), bidak jatuh ke petak kosong terbawah.</div>
+          <div><strong>Jatuhkan Bidak:</strong> Klik kolom <code>K0–K8</code> sesuai ukuran papan (atau keyboard angka), bidak jatuh ke petak kosong terbawah.</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">3</span>
-          <div><strong>Mode Spesial:</strong> Di <em>Obstacle</em> ada 4 batu yang memblokir jalur 4-in-a-row; di <em>Star</em> ada 3 petak <code>&#9733;</code> bernilai bonus skor evaluasi <code>+6</code>.</div>
+          <div><strong>Mode Spesial:</strong> Di <em>Obstacle</em> ada batu yang memblokir jalur 4-in-a-row; di <em>Star</em> ada petak <code>&#9733;</code> bernilai bonus skor evaluasi <code>+6</code>.</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">4</span>

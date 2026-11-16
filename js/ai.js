@@ -4,8 +4,8 @@
  *
  * Fitur:
  * - Adversarial Search: Depth-Limited Minimax & Alpha-Beta Pruning
- * - Heuristic Board Evaluation Function (69 window + kontrol tengah + bonus Star Tiles)
- * - Dukungan variasi papan: Classic, Obstacle Tiles (BLOCKED = -1), dan Star Bonus Tiles
+ * - Heuristic Board Evaluation Function (4-cell window + kontrol tengah + bonus Star Tiles)
+ * - Dukungan variasi papan & ukuran dinamis: 6x7, 7x8, 7x9 + Classic, Obstacle, Star
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -28,6 +28,12 @@
   const WIN_SCORE = 100000;
   const COLUMN_ORDER = [3, 2, 4, 1, 5, 0, 6];
 
+  const BOARD_SIZES = {
+    '6x7': { rows: 6, cols: 7, label: '6×7' },
+    '7x8': { rows: 7, cols: 8, label: '7×8' },
+    '7x9': { rows: 7, cols: 9, label: '7×9' },
+  };
+
   const EVAL_WEIGHTS = {
     WIN: 100000,
     AI_THREE: 12,
@@ -45,56 +51,92 @@
   };
 
   /**
-   * Buat papan kosong berukuran 6x7 (baris 0 = paling atas, baris 5 = paling bawah).
+   * Kembalikan urutan kolom tengah-ke-pinggir untuk jumlah kolom berapa pun.
    */
-  function createBoard() {
+  function getColumnOrder(cols = COLS) {
+    const order = [];
+    if (cols % 2 === 1) {
+      const mid = Math.floor(cols / 2);
+      order.push(mid);
+      for (let d = 1; d <= mid; d++) {
+        order.push(mid - d);
+        order.push(mid + d);
+      }
+    } else {
+      const left = cols / 2 - 1;
+      const right = cols / 2;
+      for (let d = 0; d < cols / 2; d++) {
+        order.push(left - d);
+        order.push(right + d);
+      }
+    }
+    return order;
+  }
+
+  /**
+   * Buat papan kosong berukuran rows x cols (baris 0 = paling atas).
+   */
+  function createBoard(rows = ROWS, cols = COLS) {
     const board = [];
-    for (let r = 0; r < ROWS; r++) {
-      board.push(new Array(COLS).fill(EMPTY));
+    for (let r = 0; r < rows; r++) {
+      board.push(new Array(cols).fill(EMPTY));
     }
     return board;
   }
 
   /**
-   * Buat konfigurasi awal papan sesuai mode ('classic', 'obstacle', 'star').
+   * Buat konfigurasi awal papan sesuai mode ('classic', 'obstacle', 'star') dan ukuran rows x cols.
    * Mengembalikan { board, starCells, obstacles }.
    */
-  function createSpecialSetup(boardMode = 'classic') {
-    const board = createBoard();
+  function createSpecialSetup(boardMode = 'classic', rows = ROWS, cols = COLS) {
+    const board = createBoard(rows, cols);
     const starCells = [];
     const obstacles = [];
 
     if (boardMode === 'obstacle') {
-      const candidateCols = [0, 1, 2, 4, 5, 6];
+      const centerSet = new Set(
+        cols % 2 === 1 ? [Math.floor(cols / 2)] : [cols / 2 - 1, cols / 2]
+      );
+      const candidateCols = [];
+      for (let c = 0; c < cols; c++) {
+        if (!centerSet.has(c)) candidateCols.push(c);
+      }
       for (let i = candidateCols.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         const tmp = candidateCols[i];
         candidateCols[i] = candidateCols[j];
         candidateCols[j] = tmp;
       }
-      const chosen = candidateCols.slice(0, 3);
-      // Tempatkan 4 batu rintangan menapak di dasar papan (3 kolom: 1 batu + 2 batu bertumpuk + 1 batu)
+
       const spots = [
-        [ROWS - 1, chosen[0]],
-        [ROWS - 1, chosen[1]],
-        [ROWS - 2, chosen[1]],
-        [ROWS - 1, chosen[2]],
+        [rows - 1, candidateCols[0]],
+        [rows - 1, candidateCols[1]],
+        [rows - 2, candidateCols[1]],
+        [rows - 1, candidateCols[2]],
       ];
+      if (cols >= 8 && candidateCols.length >= 4) {
+        spots.push([rows - 1, candidateCols[3]]);
+      }
+
       spots.forEach(([r, c]) => {
         board[r][c] = BLOCKED;
         obstacles.push([r, c]);
       });
     } else if (boardMode === 'star') {
-      const colPool = [1, 2, 3, 4, 5];
+      const colPool = [];
+      for (let c = 1; c < cols - 1; c++) {
+        colPool.push(c);
+      }
       for (let i = colPool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         const tmp = colPool[i];
         colPool[i] = colPool[j];
         colPool[j] = tmp;
       }
-      const rowPool = [2, 3, 4, 5];
-      for (let i = 0; i < 3; i++) {
-        const r = rowPool[Math.floor(Math.random() * rowPool.length)];
+      const starCount = cols >= 8 ? 4 : 3;
+      const minRow = Math.max(2, rows - 4);
+      for (let i = 0; i < Math.min(starCount, colPool.length); i++) {
+        const r = minRow + Math.floor(Math.random() * (rows - minRow));
         starCells.push([r, colPool[i]]);
       }
     }
@@ -113,16 +155,18 @@
    * Cek apakah kolom masih memiliki ruang kosong di paling atas.
    */
   function isValidLocation(board, col) {
-    return col >= 0 && col < COLS && board[0][col] === EMPTY;
+    const cols = board[0].length;
+    return col >= 0 && col < cols && board[0][col] === EMPTY;
   }
 
   /**
-   * Kembalikan daftar kolom valid sesuai prioritas tengah-ke-pinggir.
+   * Kembalikan daftar kolom valid sesuai urutan tengah-ke-pinggir.
    */
   function getValidLocations(board) {
+    const order = getColumnOrder(board[0].length);
     const valid = [];
-    for (let i = 0; i < COLUMN_ORDER.length; i++) {
-      const col = COLUMN_ORDER[i];
+    for (let i = 0; i < order.length; i++) {
+      const col = order[i];
       if (isValidLocation(board, col)) {
         valid.push(col);
       }
@@ -134,7 +178,7 @@
    * Cari baris terbawah yang masih kosong pada kolom tertentu.
    */
   function getNextOpenRow(board, col) {
-    for (let r = ROWS - 1; r >= 0; r--) {
+    for (let r = board.length - 1; r >= 0; r--) {
       if (board[r][col] === EMPTY) {
         return r;
       }
@@ -154,11 +198,13 @@
    * Mengembalikan { winner: 1 | 2 | 'DRAW' | null, cells: [[r, c], ...] }.
    */
   function getWinnerInfo(board) {
+    const rows = board.length;
+    const cols = board[0].length;
     const isPlayer = (p) => p === HUMAN || p === AI;
 
     // Cek horizontal
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c <= cols - WINDOW_LENGTH; c++) {
         const p = board[r][c];
         if (isPlayer(p) && p === board[r][c + 1] && p === board[r][c + 2] && p === board[r][c + 3]) {
           return { winner: p, cells: [[r, c], [r, c + 1], [r, c + 2], [r, c + 3]] };
@@ -167,8 +213,8 @@
     }
 
     // Cek vertikal
-    for (let c = 0; c < COLS; c++) {
-      for (let r = 0; r <= ROWS - WINDOW_LENGTH; r++) {
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r <= rows - WINDOW_LENGTH; r++) {
         const p = board[r][c];
         if (isPlayer(p) && p === board[r + 1][c] && p === board[r + 2][c] && p === board[r + 3][c]) {
           return { winner: p, cells: [[r, c], [r + 1, c], [r + 2, c], [r + 3, c]] };
@@ -177,8 +223,8 @@
     }
 
     // Cek diagonal turun ke kanan (\)
-    for (let r = 0; r <= ROWS - WINDOW_LENGTH; r++) {
-      for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
+    for (let r = 0; r <= rows - WINDOW_LENGTH; r++) {
+      for (let c = 0; c <= cols - WINDOW_LENGTH; c++) {
         const p = board[r][c];
         if (isPlayer(p) && p === board[r + 1][c + 1] && p === board[r + 2][c + 2] && p === board[r + 3][c + 3]) {
           return { winner: p, cells: [[r, c], [r + 1, c + 1], [r + 2, c + 2], [r + 3, c + 3]] };
@@ -187,8 +233,8 @@
     }
 
     // Cek diagonal naik ke kanan (/)
-    for (let r = WINDOW_LENGTH - 1; r < ROWS; r++) {
-      for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
+    for (let r = WINDOW_LENGTH - 1; r < rows; r++) {
+      for (let c = 0; c <= cols - WINDOW_LENGTH; c++) {
         const p = board[r][c];
         if (isPlayer(p) && p === board[r - 1][c + 1] && p === board[r - 2][c + 2] && p === board[r - 3][c + 3]) {
           return { winner: p, cells: [[r, c], [r - 1, c + 1], [r - 2, c + 2], [r - 3, c + 3]] };
@@ -213,7 +259,6 @@
 
   /**
    * Hitung skor satu jendela berisi 4 petak dari sudut pandang aiPiece.
-   * Jendela yang mengandung petak BLOCKED bernilai 0 karena tidak bisa menjadi 4-in-a-row.
    */
   function evaluateWindow(windowCells, aiPiece) {
     const oppPiece = aiPiece === HUMAN ? AI : HUMAN;
@@ -239,17 +284,24 @@
   }
 
   /**
-   * Analisis papan menyeluruh: menghitung total skor evaluasi sekaligus rincian fitur heuristik.
+   * Analisis papan menyeluruh untuk ukuran rows x cols berapa pun.
    */
   function analyzeBoard(board, aiPiece = AI, starCells = []) {
+    const rows = board.length;
+    const cols = board[0].length;
     const oppPiece = aiPiece === HUMAN ? AI : HUMAN;
-    const centerCol = Math.floor(COLS / 2);
+
+    const centerCols = cols % 2 === 1 ? [Math.floor(cols / 2)] : [cols / 2 - 1, cols / 2];
+    const centerWeight = cols % 2 === 1 ? EVAL_WEIGHTS.CENTER_PER_DISC : Math.floor(EVAL_WEIGHTS.CENTER_PER_DISC / 2);
 
     let centerAi = 0;
     let centerOpp = 0;
-    for (let r = 0; r < ROWS; r++) {
-      if (board[r][centerCol] === aiPiece) centerAi++;
-      else if (board[r][centerCol] === oppPiece) centerOpp++;
+    for (let i = 0; i < centerCols.length; i++) {
+      const cc = centerCols[i];
+      for (let r = 0; r < rows; r++) {
+        if (board[r][cc] === aiPiece) centerAi++;
+        else if (board[r][cc] === oppPiece) centerOpp++;
+      }
     }
 
     let aiThree = 0;
@@ -276,29 +328,29 @@
     }
 
     // Horizontal
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c <= cols - WINDOW_LENGTH; c++) {
         processWindow([board[r][c], board[r][c + 1], board[r][c + 2], board[r][c + 3]]);
       }
     }
 
     // Vertikal
-    for (let c = 0; c < COLS; c++) {
-      for (let r = 0; r <= ROWS - WINDOW_LENGTH; r++) {
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r <= rows - WINDOW_LENGTH; r++) {
         processWindow([board[r][c], board[r + 1][c], board[r + 2][c], board[r + 3][c]]);
       }
     }
 
     // Diagonal turun (\)
-    for (let r = 0; r <= ROWS - WINDOW_LENGTH; r++) {
-      for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
+    for (let r = 0; r <= rows - WINDOW_LENGTH; r++) {
+      for (let c = 0; c <= cols - WINDOW_LENGTH; c++) {
         processWindow([board[r][c], board[r + 1][c + 1], board[r + 2][c + 2], board[r + 3][c + 3]]);
       }
     }
 
     // Diagonal naik (/)
-    for (let r = WINDOW_LENGTH - 1; r < ROWS; r++) {
-      for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
+    for (let r = WINDOW_LENGTH - 1; r < rows; r++) {
+      for (let c = 0; c <= cols - WINDOW_LENGTH; c++) {
         processWindow([board[r][c], board[r - 1][c + 1], board[r - 2][c + 2], board[r - 3][c + 3]]);
       }
     }
@@ -308,12 +360,14 @@
     if (Array.isArray(starCells) && starCells.length > 0) {
       for (let i = 0; i < starCells.length; i++) {
         const [sr, sc] = starCells[i];
-        if (board[sr][sc] === aiPiece) starAi++;
-        else if (board[sr][sc] === oppPiece) starOpp++;
+        if (sr >= 0 && sr < rows && sc >= 0 && sc < cols) {
+          if (board[sr][sc] === aiPiece) starAi++;
+          else if (board[sr][sc] === oppPiece) starOpp++;
+        }
       }
     }
 
-    const centerScore = (centerAi - centerOpp) * EVAL_WEIGHTS.CENTER_PER_DISC;
+    const centerScore = (centerAi - centerOpp) * centerWeight;
     const starScore = (starAi - starOpp) * EVAL_WEIGHTS.STAR_BONUS;
     return {
       totalScore: windowScore + centerScore + starScore,
@@ -438,9 +492,10 @@
     const starCells = options.starCells || [];
 
     const workingBoard = cloneBoard(board);
+    const cols = workingBoard[0].length;
     const validCols = getValidLocations(workingBoard);
     const columnScores = {};
-    for (let c = 0; c < COLS; c++) {
+    for (let c = 0; c < cols; c++) {
       columnScores[c] = null;
     }
 
@@ -507,11 +562,12 @@
     const aiPiece = options.aiPiece !== undefined ? options.aiPiece : AI;
     const starCells = options.starCells || [];
     const preset = DIFFICULTY_PRESETS[difficulty] || DIFFICULTY_PRESETS.Hard;
+    const cols = board[0].length;
 
     if (difficulty === 'Easy' && options.customDepth === undefined) {
       const validCols = getValidLocations(board);
       const columnScores = {};
-      for (let c = 0; c < COLS; c++) {
+      for (let c = 0; c < cols; c++) {
         columnScores[c] = null;
       }
       if (validCols.length === 0) {
@@ -579,8 +635,10 @@
     AI,
     WIN_SCORE,
     COLUMN_ORDER,
+    BOARD_SIZES,
     EVAL_WEIGHTS,
     DIFFICULTY_PRESETS,
+    getColumnOrder,
     createBoard,
     createSpecialSetup,
     cloneBoard,
