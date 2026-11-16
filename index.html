@@ -34,10 +34,10 @@
     </div>
   </header>
 
-  <main class="container">
-    <!-- Kolom Kiri: Kartu Arena Bergaya Retro Figgle + Kontrol -->
-    <section>
-      <div class="card card-hero">
+  <!-- VIEW 1: MAIN MENU / KONFIGURASI AWAL -->
+  <main class="view-shell" id="menuView">
+    <section class="menu-stage animate-pop-in">
+      <div class="card card-hero menu-card">
         <div class="floating-pill">TIM 12 • ADVERSARIAL SEARCH</div>
 
         <div class="retro-hero-head">
@@ -60,189 +60,264 @@
         </div>
 
         <div class="hero-subbar">
-          <span class="hero-subbar-title">Arena Permainan Interaktif (6 × 7)</span>
-          <span class="badge badge-accent" id="turnCounterBadge">Langkah #0</span>
+          <span class="hero-subbar-title">Konfigurasi Pertandingan</span>
+          <span class="badge badge-accent" id="menuConfigBadge">Hard • Alpha-Beta • d=5</span>
         </div>
 
         <div class="hero-body">
-          <div class="status-banner turn-p1" id="statusBanner" role="status" aria-live="polite">
-            <div class="status-left">
-              <span class="status-dot p1" id="statusDot"></span>
-              <span id="statusText">Giliran Anda (Coral) — Pilih Kolom 0–6</span>
-            </div>
-            <span class="badge" id="staticEvalBadge">Eval Papan: 0</span>
-          </div>
-
-          <div class="board-wrapper">
-            <div class="col-selectors" id="colSelectors" aria-label="Pilih kolom"></div>
-            <div class="board-grid" id="boardGrid" role="grid" aria-label="Papan Connect-Four 6 baris 7 kolom"></div>
-            <div class="board-legend">
-              <span class="legend-item">
-                <span class="legend-swatch p1"></span>
-                <span id="p1LegendLabel">Pemain 1: Manusia (MIN)</span>
-              </span>
-              <span class="legend-item">
-                <span class="legend-swatch p2"></span>
-                <span id="p2LegendLabel">Pemain 2: Bot AI (MAX)</span>
-              </span>
-              <span>Shortcut: Tombol 0–6</span>
+          <div class="menu-section">
+            <label class="menu-label">1. Pilih Mode Permainan</label>
+            <div class="choice-grid cols-2" id="modeChoiceGrid">
+              <button type="button" class="choice-card active" data-mode="hvb">
+                <strong>Manusia vs Bot AI</strong>
+                <span>Lawan kecerdasan buatan langsung</span>
+              </button>
+              <button type="button" class="choice-card" data-mode="bvb">
+                <strong>Bot vs Bot (Demo)</strong>
+                <span>Tonton dua agen AI bertanding otomatis</span>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Konfigurasi Agen &amp; Permainan</h2>
-          <span class="badge badge-pink" id="activeConfigBadge">Hard • Alpha-Beta • Depth 5</span>
-        </div>
-
-        <div class="controls-grid">
-          <div class="control-group">
-            <label for="gameModeSelect">Mode Permainan</label>
-            <select id="gameModeSelect">
-              <option value="hvb" selected>Manusia vs Bot AI</option>
-              <option value="bvb">Bot AI vs Bot AI (Demo Otomatis)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="difficultySelect">Tingkat Kesulitan Bot</label>
-            <select id="difficultySelect">
-              <option value="Easy">Easy (Random Move)</option>
-              <option value="Medium">Medium (Depth-Limited Minimax, d=3)</option>
-              <option value="Hard" selected>Hard (Depth-Limited + Alpha-Beta, d=5)</option>
-              <option value="Custom">Custom (Atur Algoritma &amp; Depth)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="algorithmSelect">Algoritma Pencarian</label>
-            <select id="algorithmSelect">
-              <option value="alphabeta" selected>Depth-Limited + Alpha-Beta Pruning</option>
-              <option value="minimax">Depth-Limited Minimax Murni</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="depthSelect">Kedalaman Maksimal (Max Depth)</label>
-            <select id="depthSelect">
-              <option value="1">Depth 1 (7 node maks)</option>
-              <option value="2">Depth 2 (~56 node)</option>
-              <option value="3">Depth 3 (~399 node)</option>
-              <option value="4">Depth 4 (~2.800 node)</option>
-              <option value="5" selected>Depth 5 (~19.600 node jika tanpa pruning)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="firstPlayerSelect">Pemain Pertama</label>
-            <select id="firstPlayerSelect">
-              <option value="1" selected>Pemain 1 / Manusia Duluan</option>
-              <option value="2">Pemain 2 / Bot AI Duluan</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="compareDepthSelect">Kedalaman Benchmark Perbandingan</label>
-            <select id="compareDepthSelect">
-              <option value="3">Depth 3 (Cepat)</option>
-              <option value="4" selected>Depth 4 (Ideal untuk Demo)</option>
-              <option value="5">Depth 5 (Ekstrem Pruning)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="control-actions">
-          <button class="btn btn-primary" id="resetBtn" type="button">Reset Permainan</button>
-          <button class="btn btn-pink" id="undoBtn" type="button">Undo Langkah</button>
-          <button class="btn btn-colab" id="botStepBtn" type="button" style="display: none;">1 Langkah Bot</button>
-          <button class="btn btn-green" id="autoPlayBtn" type="button" style="display: none;">Auto-Play Bot vs Bot</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Kolom Kanan: Panel Inspektor AI & Scoring Legend ala Figgle -->
-    <section>
-      <div class="card">
-        <div class="floating-pill">SCORING SHEET &amp; INSPEKTOR AI</div>
-        <div class="card-header" style="margin-top: 6px;">
-          <h2 class="card-title">Analisis Langkah Bot AI</h2>
-          <span class="badge badge-accent" id="algoBadge">Menunggu langkah Bot</span>
-        </div>
-
-        <div class="metrics-grid">
-          <div class="metric-box accent-yellow">
-            <div class="metric-label">Kolom Dipilih</div>
-            <div class="metric-value" id="metricBestCol">-</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">Skor Terbaik</div>
-            <div class="metric-value" id="metricBestScore">-</div>
-          </div>
-          <div class="metric-box accent-pink">
-            <div class="metric-label">Node Evaluasi</div>
-            <div class="metric-value" id="metricNodes">-</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">Waktu Proses</div>
-            <div class="metric-value" id="metricTime">-</div>
-          </div>
-        </div>
-
-        <div class="section-label">Skor Evaluasi Tiap Kolom (Sudut Pandang Bot AI)</div>
-        <div class="col-scores-list" id="colScoresList"></div>
-
-        <div class="scoring-legend-card">
-          <div class="scoring-legend-head">
-            <span>Scoring Legend — Eval Function</span>
-            <span class="badge" id="legendTotalBadge">Total: 0</span>
-          </div>
-          <div class="scoring-legend-list" id="heuristicGrid"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Uji Efisiensi: Minimax vs Alpha-Beta</h2>
-          <button class="btn btn-green btn-sm" id="compareBtn" type="button">Bandingkan Node Sekarang</button>
-        </div>
-        <p style="font-size: 13px; font-weight: 600;">
-          Menjalankan kedua algoritma pada posisi papan saat ini untuk membuktikan keputusan tetap identik dengan node jauh lebih hemat.
-        </p>
-        <div class="compare-result" id="compareResult">
-          Klik <strong>Bandingkan Node Sekarang</strong> kapan saja selama permainan untuk melihat hasil eksperimen langsung.
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="tabs" role="tablist">
-          <button class="tab-btn active" type="button" data-tab="logPanel">Riwayat Langkah</button>
-          <button class="tab-btn" type="button" data-tab="theoryPanel">Pemodelan AI (Sesi 1–4)</button>
-        </div>
-
-        <div class="tab-panel active" id="logPanel">
-          <div class="move-log" id="moveLog">
-            <div class="move-log-empty">Belum ada langkah dimainkan.</div>
-          </div>
-        </div>
-
-        <div class="tab-panel" id="theoryPanel">
-          <div class="theory-list">
-            <div class="theory-item">
-              <strong>Sesi 1 — Intelligent Agent:</strong> Percept berupa matriks papan 6×7; Action berupa drop bidak di kolom valid [0..6]; Performance Measure berdasarkan kemenangan (4-in-a-row) &amp; fungsi evaluasi.
+          <div class="menu-section">
+            <label class="menu-label">2. Tingkat Kesulitan Bot AI</label>
+            <div class="choice-grid cols-2" id="diffChoiceGrid">
+              <button type="button" class="choice-card" data-diff="Easy">
+                <strong>Easy</strong>
+                <span>Random Move (Sesi 4)</span>
+              </button>
+              <button type="button" class="choice-card" data-diff="Medium">
+                <strong>Medium</strong>
+                <span>Depth-Limited Minimax (d=3)</span>
+              </button>
+              <button type="button" class="choice-card active" data-diff="Hard">
+                <strong>Hard</strong>
+                <span>Depth-Limited + Alpha-Beta (d=5)</span>
+              </button>
+              <button type="button" class="choice-card" data-diff="Custom">
+                <strong>Custom</strong>
+                <span>Atur algoritma &amp; depth sendiri</span>
+              </button>
             </div>
-            <div class="theory-item">
-              <strong>Sesi 2 &amp; 3 — State Space &amp; Heuristic:</strong> Ruang pencarian Connect-Four maksimal 42 langkah (b &le; 7). Fungsi heuristik <code>evaluateBoard()</code> menaksir kualitas posisi non-terminal tanpa harus menunggu game berakhir.
+          </div>
+
+          <div class="menu-section custom-box" id="customConfigBox" style="display: none;">
+            <div class="controls-grid">
+              <div class="control-group">
+                <label for="algorithmSelect">Algoritma Pencarian</label>
+                <select id="algorithmSelect">
+                  <option value="alphabeta" selected>Depth-Limited + Alpha-Beta Pruning</option>
+                  <option value="minimax">Depth-Limited Minimax Murni</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label for="depthSelect">Kedalaman Maksimal (Max Depth)</label>
+                <select id="depthSelect">
+                  <option value="1">Depth 1</option>
+                  <option value="2">Depth 2</option>
+                  <option value="3">Depth 3</option>
+                  <option value="4">Depth 4</option>
+                  <option value="5" selected>Depth 5</option>
+                </select>
+              </div>
             </div>
-            <div class="theory-item">
-              <strong>Sesi 4 — Depth-Limited Minimax &amp; Alpha-Beta:</strong> Bot (MAX) memaksimalkan nilai utilitas dan memblokir ancaman Manusia (MIN). Pemangkasan cabang terjadi saat <code>&alpha; &ge; &beta;</code> dengan prioritas kolom tengah <code>[3, 2, 4, 1, 5, 0, 6]</code>.
+          </div>
+
+          <div class="menu-section">
+            <label class="menu-label" for="firstPlayerSelect">3. Giliran Jalan Pertama</label>
+            <div class="choice-grid cols-2" id="firstChoiceGrid">
+              <button type="button" class="choice-card active" data-first="1">
+                <strong>Pemain 1 (Coral) Duluan</strong>
+                <span id="firstP1Hint">Manusia jalan pertama</span>
+              </button>
+              <button type="button" class="choice-card" data-first="2">
+                <strong>Pemain 2 (Kuning) Duluan</strong>
+                <span>Bot AI membuka permainan</span>
+              </button>
             </div>
+          </div>
+
+          <div class="menu-actions">
+            <button type="button" class="btn btn-primary btn-lg" id="startGameBtn">
+              MULAI MAIN SEKARANG
+            </button>
+            <button type="button" class="btn btn-pink" id="openInfoBtn">
+              Bobot Eval &amp; Cara Kerja AI
+            </button>
           </div>
         </div>
       </div>
     </section>
   </main>
+
+  <!-- VIEW 2 & 3: ARENA BERSIH -> MUNCUL ANALISIS SETELAH SELESAI -->
+  <main class="view-shell" id="gameView" style="display: none;">
+    <div class="arena-shell" id="arenaShell">
+      <!-- Kolom Kiri / Tengah: Arena Permainan -->
+      <section class="arena-column">
+        <div class="card card-hero">
+          <div class="floating-pill" id="arenaPill">ARENA PERMAINAN • TIM 12</div>
+
+          <div class="arena-topbar">
+            <button type="button" class="btn btn-sm" id="backMenuBtn">&larr; Menu Utama</button>
+            <div class="arena-badges">
+              <span class="badge badge-pink" id="activeConfigBadge">Hard • d=5</span>
+              <span class="badge badge-accent" id="turnCounterBadge">Langkah #0</span>
+            </div>
+            <div class="arena-quick-btns">
+              <button type="button" class="btn btn-sm btn-pink" id="undoBtn">Undo</button>
+              <button type="button" class="btn btn-sm btn-primary" id="resetBtn">Reset</button>
+            </div>
+          </div>
+
+          <div class="arena-bvb-bar" id="bvbBar" style="display: none;">
+            <span style="font-size: 12px; font-weight: 800;">Kontrol Demo Bot vs Bot:</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-sm btn-colab" id="botStepBtn">1 Langkah Bot</button>
+              <button type="button" class="btn btn-sm btn-green" id="autoPlayBtn">Jeda Auto-Play</button>
+            </div>
+          </div>
+
+          <div class="hero-body">
+            <div class="status-banner turn-p1" id="statusBanner" role="status" aria-live="polite">
+              <div class="status-left">
+                <span class="status-dot p1" id="statusDot"></span>
+                <span id="statusText">Giliran Anda (Coral) — Pilih Kolom 0–6</span>
+                <span class="thinking-dots" id="thinkingDots" aria-hidden="true">
+                  <span></span><span></span><span></span>
+                </span>
+              </div>
+              <span class="badge" id="lastMovePill">Siap Main</span>
+            </div>
+
+            <div class="board-wrapper">
+              <div class="hover-preview-row" id="hoverPreviewRow" aria-hidden="true"></div>
+              <div class="col-selectors" id="colSelectors" aria-label="Pilih kolom"></div>
+              <div class="board-grid" id="boardGrid" role="grid" aria-label="Papan Connect-Four 6 baris 7 kolom"></div>
+              <div class="board-legend">
+                <span class="legend-item">
+                  <span class="legend-swatch p1"></span>
+                  <span id="p1LegendLabel">Pemain 1: Manusia (Coral)</span>
+                </span>
+                <span class="legend-item">
+                  <span class="legend-swatch p2"></span>
+                  <span id="p2LegendLabel">Pemain 2: Bot AI (Kuning)</span>
+                </span>
+                <span>Shortcut: Tombol 0–6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Kolom Kanan: Panel Analisis (Hanya Muncul Setelah Permainan Selesai!) -->
+      <section class="analysis-column" id="postGamePanel" style="display: none;">
+        <div class="card animate-pop-in">
+          <div class="floating-pill">HASIL &amp; ANALISIS PERTANDINGAN</div>
+
+          <div class="postgame-banner" id="postGameBanner">
+            <div>
+              <div class="postgame-title" id="postGameTitle">Permainan Selesai!</div>
+              <div class="postgame-sub" id="postGameSub">Ringkasan performa Minimax selama pertandingan.</div>
+            </div>
+            <div class="postgame-cta">
+              <button type="button" class="btn btn-sm btn-colab" id="playAgainBtn">Main Lagi</button>
+              <button type="button" class="btn btn-sm" id="postMenuBtn">Menu Utama</button>
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-box accent-yellow">
+              <div class="metric-label">Total Langkah</div>
+              <div class="metric-value" id="statTotalMoves">0</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Langkah Bot</div>
+              <div class="metric-value" id="statBotMoves">0</div>
+            </div>
+            <div class="metric-box accent-pink">
+              <div class="metric-label">Rata-rata Node</div>
+              <div class="metric-value" id="statAvgNodes">0</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Total Waktu Bot</div>
+              <div class="metric-value" id="statTotalTime">0 ms</div>
+            </div>
+          </div>
+
+          <div class="section-label">Tabel Analisis Langkah Bot AI (Per Giliran)</div>
+          <div class="analysis-table-wrap">
+            <table class="analysis-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Aktor</th>
+                  <th>Kolom</th>
+                  <th>Skor Eval</th>
+                  <th>Node</th>
+                  <th>Waktu</th>
+                </tr>
+              </thead>
+              <tbody id="postGameTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="scoring-legend-card" style="margin-top: 14px;">
+            <div class="scoring-legend-head">
+              <span>Scoring Legend — Kondisi Papan Akhir</span>
+              <span class="badge" id="legendTotalBadge">Total: 0</span>
+            </div>
+            <div class="scoring-legend-list" id="heuristicGrid"></div>
+          </div>
+        </div>
+
+        <div class="card animate-pop-in" style="margin-top: 18px;">
+          <div class="card-header">
+            <h2 class="card-title">Uji Efisiensi: Minimax vs Alpha-Beta</h2>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <select id="compareDepthSelect" class="mini-select" aria-label="Pilih kedalaman benchmark">
+                <option value="3">Depth 3</option>
+                <option value="4" selected>Depth 4</option>
+                <option value="5">Depth 5</option>
+              </select>
+              <button class="btn btn-green btn-sm" id="compareBtn" type="button">Bandingkan Node</button>
+            </div>
+          </div>
+          <p class="compare-caption" id="compareContextText">
+            Menguji posisi papan aktif terakhir sebelum langkah penutup untuk membandingkan efisiensi pruning.
+          </p>
+          <div class="compare-result" id="compareResult">
+            Klik <strong>Bandingkan Node</strong> untuk melihat perbandingan jumlah node Minimax Murni vs Alpha-Beta Pruning.
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- MODAL INFO BOBOT EVAL & TEORI AI -->
+  <div class="modal-backdrop" id="infoModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+    <div class="card modal-card animate-pop-in">
+      <div class="card-header">
+        <h2 class="card-title" id="infoModalTitle">Cara Kerja AI &amp; Bobot Evaluasi (Sesi 1–4)</h2>
+        <button type="button" class="btn btn-sm btn-coral" id="closeInfoBtn">Tutup</button>
+      </div>
+      <div class="theory-list" style="margin-bottom: 12px;">
+        <div class="theory-item">
+          <strong>Depth-Limited Minimax:</strong> Karena Game Tree Connect-Four sangat dalam (maks 42 langkah), pencarian dibatasi hingga <code>max_depth</code> dan dinilai dengan fungsi evaluasi papan.
+        </div>
+        <div class="theory-item">
+          <strong>Alpha-Beta Pruning &amp; Move Ordering:</strong> Memangkas cabang yang tidak memengaruhi hasil saat <code>&alpha; &ge; &beta;</code> dengan prioritas tengah-ke-pinggir <code>[3, 2, 4, 1, 5, 0, 6]</code>.
+        </div>
+      </div>
+      <div class="scoring-legend-card">
+        <div class="scoring-legend-head">
+          <span>Scoring Legend — Bobot Eval Function</span>
+          <span class="badge">Sinkron Colab 1:1</span>
+        </div>
+        <div class="scoring-legend-list" id="modalLegendList"></div>
+      </div>
+    </div>
+  </div>
 
   <footer class="footer">
     <span>IDE LPKIA Bandung • UTS PjBL Kecerdasan Buatan &amp; Sistem Cerdas (TIM 12)</span>

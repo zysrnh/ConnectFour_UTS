@@ -5,6 +5,10 @@
   const { ROWS, COLS, EMPTY, HUMAN, AI, WIN_SCORE } = AI_LIB;
 
   const state = {
+    view: 'menu', // 'menu' | 'game'
+    gameMode: 'hvb', // 'hvb' | 'bvb'
+    difficulty: 'Hard', // 'Easy' | 'Medium' | 'Hard' | 'Custom'
+    firstPlayer: HUMAN, // 1 | 2
     board: AI_LIB.createBoard(),
     currentPlayer: HUMAN,
     gameOver: false,
@@ -15,90 +19,125 @@
     moveCount: 0,
     moveLog: [],
     history: [],
+    compareTarget: null,
     isThinking: false,
+    autoPlayPaused: false,
     autoPlayTimer: null,
     pendingBotTimer: null,
+    postGameTimer: null,
     hoverCol: -1,
   };
 
   const els = {
+    // Views
+    menuView: document.getElementById('menuView'),
+    gameView: document.getElementById('gameView'),
+    arenaShell: document.getElementById('arenaShell'),
+
+    // Main Menu
+    menuConfigBadge: document.getElementById('menuConfigBadge'),
+    modeChoiceGrid: document.getElementById('modeChoiceGrid'),
+    diffChoiceGrid: document.getElementById('diffChoiceGrid'),
+    firstChoiceGrid: document.getElementById('firstChoiceGrid'),
+    firstP1Hint: document.getElementById('firstP1Hint'),
+    customConfigBox: document.getElementById('customConfigBox'),
+    algorithmSelect: document.getElementById('algorithmSelect'),
+    depthSelect: document.getElementById('depthSelect'),
+    startGameBtn: document.getElementById('startGameBtn'),
+    openInfoBtn: document.getElementById('openInfoBtn'),
+
+    // Modal
+    infoModal: document.getElementById('infoModal'),
+    closeInfoBtn: document.getElementById('closeInfoBtn'),
+    modalLegendList: document.getElementById('modalLegendList'),
+
+    // Arena
+    arenaPill: document.getElementById('arenaPill'),
+    backMenuBtn: document.getElementById('backMenuBtn'),
+    activeConfigBadge: document.getElementById('activeConfigBadge'),
     turnCounterBadge: document.getElementById('turnCounterBadge'),
+    undoBtn: document.getElementById('undoBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    bvbBar: document.getElementById('bvbBar'),
+    botStepBtn: document.getElementById('botStepBtn'),
+    autoPlayBtn: document.getElementById('autoPlayBtn'),
     statusBanner: document.getElementById('statusBanner'),
     statusDot: document.getElementById('statusDot'),
     statusText: document.getElementById('statusText'),
-    staticEvalBadge: document.getElementById('staticEvalBadge'),
+    thinkingDots: document.getElementById('thinkingDots'),
+    lastMovePill: document.getElementById('lastMovePill'),
+    hoverPreviewRow: document.getElementById('hoverPreviewRow'),
     colSelectors: document.getElementById('colSelectors'),
     boardGrid: document.getElementById('boardGrid'),
     p1LegendLabel: document.getElementById('p1LegendLabel'),
     p2LegendLabel: document.getElementById('p2LegendLabel'),
-    activeConfigBadge: document.getElementById('activeConfigBadge'),
-    gameModeSelect: document.getElementById('gameModeSelect'),
-    difficultySelect: document.getElementById('difficultySelect'),
-    algorithmSelect: document.getElementById('algorithmSelect'),
-    depthSelect: document.getElementById('depthSelect'),
-    firstPlayerSelect: document.getElementById('firstPlayerSelect'),
-    compareDepthSelect: document.getElementById('compareDepthSelect'),
-    resetBtn: document.getElementById('resetBtn'),
-    undoBtn: document.getElementById('undoBtn'),
-    botStepBtn: document.getElementById('botStepBtn'),
-    autoPlayBtn: document.getElementById('autoPlayBtn'),
-    algoBadge: document.getElementById('algoBadge'),
-    metricBestCol: document.getElementById('metricBestCol'),
-    metricBestScore: document.getElementById('metricBestScore'),
-    metricNodes: document.getElementById('metricNodes'),
-    metricTime: document.getElementById('metricTime'),
-    colScoresList: document.getElementById('colScoresList'),
-    heuristicGrid: document.getElementById('heuristicGrid'),
+
+    // Post-Game Analysis
+    postGamePanel: document.getElementById('postGamePanel'),
+    postGameBanner: document.getElementById('postGameBanner'),
+    postGameTitle: document.getElementById('postGameTitle'),
+    postGameSub: document.getElementById('postGameSub'),
+    playAgainBtn: document.getElementById('playAgainBtn'),
+    postMenuBtn: document.getElementById('postMenuBtn'),
+    statTotalMoves: document.getElementById('statTotalMoves'),
+    statBotMoves: document.getElementById('statBotMoves'),
+    statAvgNodes: document.getElementById('statAvgNodes'),
+    statTotalTime: document.getElementById('statTotalTime'),
+    postGameTableBody: document.getElementById('postGameTableBody'),
     legendTotalBadge: document.getElementById('legendTotalBadge'),
+    heuristicGrid: document.getElementById('heuristicGrid'),
+    compareDepthSelect: document.getElementById('compareDepthSelect'),
     compareBtn: document.getElementById('compareBtn'),
+    compareContextText: document.getElementById('compareContextText'),
     compareResult: document.getElementById('compareResult'),
-    moveLog: document.getElementById('moveLog'),
-    tabBtns: document.querySelectorAll('.tab-btn'),
-    tabPanels: document.querySelectorAll('.tab-panel'),
   };
 
   function getAiConfig() {
-    const difficulty = els.difficultySelect.value;
-    if (difficulty === 'Easy') {
-      return { difficulty: 'Easy', usePruning: false, maxDepth: 0 };
+    if (state.difficulty === 'Easy') {
+      return { difficulty: 'Easy', usePruning: false, maxDepth: 0, label: 'Easy • Random' };
     }
-    if (difficulty === 'Medium') {
-      return { difficulty: 'Medium', usePruning: false, maxDepth: 3 };
+    if (state.difficulty === 'Medium') {
+      return { difficulty: 'Medium', usePruning: false, maxDepth: 3, label: 'Medium • Minimax d=3' };
     }
-    if (difficulty === 'Hard') {
-      return { difficulty: 'Hard', usePruning: true, maxDepth: 5 };
+    if (state.difficulty === 'Hard') {
+      return { difficulty: 'Hard', usePruning: true, maxDepth: 5, label: 'Hard • Alpha-Beta d=5' };
     }
+    const usePruning = els.algorithmSelect.value === 'alphabeta';
+    const maxDepth = Number(els.depthSelect.value);
+    const algoTxt = usePruning ? 'Alpha-Beta' : 'Minimax';
     return {
       difficulty: 'Custom',
-      usePruning: els.algorithmSelect.value === 'alphabeta',
-      maxDepth: Number(els.depthSelect.value),
+      usePruning,
+      maxDepth,
+      label: `Custom • ${algoTxt} d=${maxDepth}`,
     };
   }
 
-  function syncControlsWithDifficulty() {
-    const diff = els.difficultySelect.value;
-    if (diff === 'Easy') {
-      els.algorithmSelect.disabled = true;
-      els.depthSelect.disabled = true;
-      els.activeConfigBadge.textContent = 'Easy • Random Move';
-    } else if (diff === 'Medium') {
-      els.algorithmSelect.disabled = false;
-      els.depthSelect.disabled = false;
-      els.algorithmSelect.value = 'minimax';
-      els.depthSelect.value = '3';
-      els.activeConfigBadge.textContent = 'Medium • Minimax • Depth 3';
-    } else if (diff === 'Hard') {
-      els.algorithmSelect.disabled = false;
-      els.depthSelect.disabled = false;
-      els.algorithmSelect.value = 'alphabeta';
-      els.depthSelect.value = '5';
-      els.activeConfigBadge.textContent = 'Hard • Alpha-Beta • Depth 5';
-    } else {
-      els.algorithmSelect.disabled = false;
-      els.depthSelect.disabled = false;
-      const algoLabel = els.algorithmSelect.value === 'alphabeta' ? 'Alpha-Beta' : 'Minimax';
-      els.activeConfigBadge.textContent = `Custom • ${algoLabel} • Depth ${els.depthSelect.value}`;
-    }
+  function formatScore(score) {
+    if (score === null || score === undefined) return '-';
+    if (score >= WIN_SCORE - 100) return `+${score} (Win)`;
+    if (score <= -(WIN_SCORE - 100)) return `${score} (Lose)`;
+    return score > 0 ? `+${score}` : `${score}`;
+  }
+
+  function syncMenuUI() {
+    els.modeChoiceGrid.querySelectorAll('.choice-card').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === state.gameMode);
+    });
+    els.diffChoiceGrid.querySelectorAll('.choice-card').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.diff === state.difficulty);
+    });
+    els.firstChoiceGrid.querySelectorAll('.choice-card').forEach((btn) => {
+      btn.classList.toggle('active', Number(btn.dataset.first) === state.firstPlayer);
+    });
+
+    els.firstP1Hint.textContent =
+      state.gameMode === 'bvb' ? 'Bot Coral (Depth 3) jalan pertama' : 'Manusia jalan pertama';
+    els.customConfigBox.style.display = state.difficulty === 'Custom' ? 'block' : 'none';
+
+    const cfg = getAiConfig();
+    els.menuConfigBadge.textContent = cfg.label;
+    els.activeConfigBadge.textContent = cfg.label;
   }
 
   function clearTimers() {
@@ -109,9 +148,91 @@
     if (state.autoPlayTimer) {
       clearInterval(state.autoPlayTimer);
       state.autoPlayTimer = null;
-      els.autoPlayBtn.textContent = 'Auto-Play Bot vs Bot';
+    }
+    if (state.postGameTimer) {
+      clearTimeout(state.postGameTimer);
+      state.postGameTimer = null;
     }
     state.isThinking = false;
+  }
+
+  function switchView(viewName) {
+    state.view = viewName;
+    els.menuView.style.display = viewName === 'menu' ? 'block' : 'none';
+    els.gameView.style.display = viewName === 'game' ? 'block' : 'none';
+  }
+
+  function renderScoringLegend(targetEl, info, winner) {
+    function renderMiniTiles(dots) {
+      return (
+        '<span class="mini-tiles">' +
+        dots.map((d) => `<span class="mini-tile"><span class="mini-dot ${d}"></span></span>`).join('') +
+        '</span>'
+      );
+    }
+
+    const rows = [
+      {
+        dots: ['ai', 'ai', 'ai', 'ai'],
+        label: '4-in-a-Row AI',
+        count: winner === AI ? 'Menang' : info ? '0x' : 'Terminal',
+        pts: '+100000',
+      },
+      {
+        dots: ['ai', 'ai', 'ai', 'empty'],
+        label: '3 AI + 1 Kosong',
+        count: info ? `${info.aiThree}x` : 'per pola',
+        pts: '+12',
+      },
+      {
+        dots: ['ai', 'ai', 'empty', 'empty'],
+        label: '2 AI + 2 Kosong',
+        count: info ? `${info.aiTwo}x` : 'per pola',
+        pts: '+3',
+      },
+      {
+        dots: ['opp', 'opp', 'opp', 'empty'],
+        label: 'Ancaman 3 Lawan',
+        count: info ? `${info.oppThree}x` : 'per pola',
+        pts: '-80',
+      },
+      {
+        dots: ['opp', 'opp', 'empty', 'empty'],
+        label: '2 Lawan + 2 Kosong',
+        count: info ? `${info.oppTwo}x` : 'per pola',
+        pts: '-2',
+      },
+      {
+        dots: ['center'],
+        label: 'Kontrol Kolom Tengah',
+        count: info ? `AI ${info.centerAi}:${info.centerOpp}` : 'per selisih',
+        pts: info ? `${info.centerScore >= 0 ? '+' : ''}${info.centerScore}` : '+4',
+      },
+    ];
+
+    targetEl.innerHTML = '';
+    rows.forEach((row) => {
+      const el = document.createElement('div');
+      el.className = 'legend-score-row';
+      el.innerHTML = `
+        <div class="legend-pattern">
+          ${renderMiniTiles(row.dots)}
+          <span>${row.label}</span>
+        </div>
+        <div class="legend-right">
+          <span class="legend-live-count">${row.count}</span>
+          <span class="legend-points">${row.pts}</span>
+        </div>
+      `;
+      targetEl.appendChild(el);
+    });
+  }
+
+  function getWinningIndex(r, c) {
+    for (let i = 0; i < state.winCells.length; i++) {
+      if (state.winCells[i][0] === r && state.winCells[i][1] === c) return i;
+    }
+    return -1;
   }
 
   function saveSnapshot() {
@@ -125,6 +246,9 @@
       lastAiResult: state.lastAiResult ? { ...state.lastAiResult, columnScores: { ...state.lastAiResult.columnScores } } : null,
       moveCount: state.moveCount,
       moveLog: state.moveLog.slice(),
+      compareTarget: state.compareTarget
+        ? { board: AI_LIB.cloneBoard(state.compareTarget.board), aiPiece: state.compareTarget.aiPiece, step: state.compareTarget.step }
+        : null,
     });
   }
 
@@ -138,33 +262,26 @@
     state.lastAiResult = snap.lastAiResult;
     state.moveCount = snap.moveCount;
     state.moveLog = snap.moveLog.slice();
-  }
-
-  function formatScore(score) {
-    if (score === null || score === undefined) return 'Penuh';
-    if (score >= WIN_SCORE - 100) return `+${score} (Win)`;
-    if (score <= -(WIN_SCORE - 100)) return `${score} (Lose)`;
-    return score > 0 ? `+${score}` : `${score}`;
-  }
-
-  function isWinningCell(r, c) {
-    for (let i = 0; i < state.winCells.length; i++) {
-      if (state.winCells[i][0] === r && state.winCells[i][1] === c) return true;
-    }
-    return false;
-  }
-
-  function updateLegendAndModeButtons() {
-    const isBvb = els.gameModeSelect.value === 'bvb';
-    els.p1LegendLabel.textContent = isBvb ? 'Pemain 1: Bot Coral (Depth 3)' : 'Pemain 1: Manusia (MIN • Coral)';
-    els.p2LegendLabel.textContent = isBvb ? 'Pemain 2: Bot Kuning (Konfigurasi Aktif)' : 'Pemain 2: Bot AI (MAX • Kuning)';
-    els.botStepBtn.style.display = isBvb ? 'inline-flex' : 'none';
-    els.autoPlayBtn.style.display = isBvb ? 'inline-flex' : 'none';
+    state.compareTarget = snap.compareTarget
+      ? { board: AI_LIB.cloneBoard(snap.compareTarget.board), aiPiece: snap.compareTarget.aiPiece, step: snap.compareTarget.step }
+      : null;
   }
 
   function renderBoard() {
-    const isBvb = els.gameModeSelect.value === 'bvb';
+    const isBvb = state.gameMode === 'bvb';
     const humanCanClick = !state.gameOver && !state.isThinking && !isBvb && state.currentPlayer === HUMAN;
+
+    // Ghost Hover Preview Row
+    els.hoverPreviewRow.innerHTML = '';
+    for (let c = 0; c < COLS; c++) {
+      const slot = document.createElement('div');
+      slot.className = 'ghost-slot';
+      const ghost = document.createElement('div');
+      ghost.className = 'ghost-disc';
+      ghost.dataset.col = String(c);
+      slot.appendChild(ghost);
+      els.hoverPreviewRow.appendChild(slot);
+    }
 
     // Column selector buttons
     els.colSelectors.innerHTML = '';
@@ -173,9 +290,6 @@
       btn.type = 'button';
       btn.className = 'col-btn';
       const valid = AI_LIB.isValidLocation(state.board, c);
-      if (state.hoverCol === c && valid && humanCanClick) {
-        btn.classList.add('col-hover');
-      }
       if (state.lastAiResult && state.lastAiResult.bestCol === c) {
         btn.classList.add('col-best');
       }
@@ -194,17 +308,19 @@
       for (let c = 0; c < COLS; c++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
+        cell.dataset.row = String(r);
+        cell.dataset.col = String(c);
+
         if (!humanCanClick || !AI_LIB.isValidLocation(state.board, c)) {
           cell.classList.add('disabled');
-        }
-        if (state.hoverCol === c && state.board[r][c] === EMPTY && humanCanClick && AI_LIB.isValidLocation(state.board, c)) {
-          cell.classList.add('col-active-hover');
         }
         if (state.lastMove && state.lastMove.row === r && state.lastMove.col === c) {
           cell.classList.add('last-move');
         }
-        if (isWinningCell(r, c)) {
+        const winIdx = getWinningIndex(r, c);
+        if (winIdx !== -1) {
           cell.classList.add('win-cell');
+          cell.style.setProperty('--win-idx', String(winIdx));
         }
 
         const val = state.board[r][c];
@@ -213,6 +329,7 @@
           disc.className = `disc ${val === HUMAN ? 'p1' : 'p2'}`;
           if (state.lastMove && state.lastMove.row === r && state.lastMove.col === c && state.lastMove.animate) {
             disc.classList.add('drop-anim');
+            disc.style.setProperty('--drop-rows', String(r + 1));
           }
           cell.appendChild(disc);
         }
@@ -229,32 +346,64 @@
     if (state.lastMove) {
       state.lastMove.animate = false;
     }
+    applyHoverVisuals();
+  }
+
+  function applyHoverVisuals() {
+    const isBvb = state.gameMode === 'bvb';
+    const humanCanClick = !state.gameOver && !state.isThinking && !isBvb && state.currentPlayer === HUMAN;
+    const col = state.hoverCol;
+    const landingRow =
+      humanCanClick && col >= 0 && AI_LIB.isValidLocation(state.board, col)
+        ? AI_LIB.getNextOpenRow(state.board, col)
+        : -1;
+
+    els.hoverPreviewRow.querySelectorAll('.ghost-disc').forEach((g, idx) => {
+      g.classList.toggle('visible', idx === col && landingRow !== -1);
+    });
+
+    els.colSelectors.querySelectorAll('.col-btn').forEach((btn, idx) => {
+      btn.classList.toggle('col-hover', idx === col && landingRow !== -1);
+    });
+
+    els.boardGrid.querySelectorAll('.cell').forEach((cell) => {
+      const r = Number(cell.dataset.row);
+      const c = Number(cell.dataset.col);
+      const isColHover = c === col && landingRow !== -1 && state.board[r][c] === EMPTY;
+      cell.classList.toggle('col-active-hover', isColHover && r !== landingRow);
+      cell.classList.toggle('target-landing', isColHover && r === landingRow);
+    });
   }
 
   function setHoverCol(col) {
     if (state.hoverCol === col) return;
     state.hoverCol = col;
-    const cols = els.colSelectors.querySelectorAll('.col-btn');
-    cols.forEach((btn, idx) => {
-      btn.classList.toggle('col-hover', idx === col && !btn.disabled);
-    });
-    const cells = els.boardGrid.querySelectorAll('.cell');
-    cells.forEach((cell, idx) => {
-      const r = Math.floor(idx / COLS);
-      const c = idx % COLS;
-      const isClickable = !cell.classList.contains('disabled');
-      cell.classList.toggle('col-active-hover', c === col && state.board[r][c] === EMPTY && isClickable);
-    });
+    applyHoverVisuals();
   }
 
-  function renderStatus() {
-    els.turnCounterBadge.textContent = `Langkah #${state.moveCount}`;
-    const staticAnalysis = AI_LIB.analyzeBoard(state.board, AI);
-    els.staticEvalBadge.textContent = `Eval Papan (AI): ${formatScore(staticAnalysis.totalScore)}`;
+  function renderArenaHeaderAndStatus() {
+    const isBvb = state.gameMode === 'bvb';
+    els.arenaPill.textContent = isBvb ? 'DEMO BOT VS BOT • TIM 12' : 'ARENA PERMAINAN • TIM 12';
+    els.p1LegendLabel.textContent = isBvb ? 'Pemain 1: Bot Coral (Depth 3)' : 'Pemain 1: Manusia (MIN • Coral)';
+    els.p2LegendLabel.textContent = isBvb ? 'Pemain 2: Bot Kuning (Konfigurasi Aktif)' : 'Pemain 2: Bot AI (MAX • Kuning)';
 
-    const isBvb = els.gameModeSelect.value === 'bvb';
+    els.bvbBar.style.display = isBvb && !state.gameOver ? 'flex' : 'none';
+    els.autoPlayBtn.textContent = state.autoPlayPaused ? 'Lanjut Auto-Play' : 'Jeda Auto-Play';
+
+    els.turnCounterBadge.textContent = `Langkah #${state.moveCount}`;
+    els.undoBtn.disabled = state.history.length === 0 || state.isThinking;
+
+    if (state.lastAiResult) {
+      els.lastMovePill.textContent = `Bot → Kol ${state.lastAiResult.bestCol} (eval ${formatScore(state.lastAiResult.bestScore)})`;
+    } else if (state.lastMove) {
+      els.lastMovePill.textContent = `Terakhir → Kol ${state.lastMove.col}`;
+    } else {
+      els.lastMovePill.textContent = 'Siap Main';
+    }
+
     els.statusBanner.className = 'status-banner';
     els.statusDot.className = 'status-dot';
+    els.thinkingDots.classList.remove('active');
 
     if (state.gameOver) {
       if (state.winner === 'DRAW') {
@@ -278,7 +427,8 @@
     if (state.isThinking) {
       els.statusBanner.classList.add(state.currentPlayer === HUMAN ? 'turn-p1' : 'turn-p2');
       els.statusDot.classList.add(state.currentPlayer === HUMAN ? 'p1' : 'p2');
-      els.statusText.textContent = 'Bot AI sedang mengevaluasi Game Tree...';
+      els.statusText.textContent = 'Bot AI sedang mengevaluasi Game Tree';
+      els.thinkingDots.classList.add('active');
       return;
     }
 
@@ -286,198 +436,126 @@
       els.statusBanner.classList.add('turn-p1');
       els.statusDot.classList.add('p1');
       els.statusText.textContent = isBvb
-        ? 'Giliran Bot Coral (Klik 1 Langkah atau Auto-Play)'
+        ? 'Giliran Bot Coral...'
         : 'Giliran Anda (Coral) — Pilih Kolom 0–6';
     } else {
       els.statusBanner.classList.add('turn-p2');
       els.statusDot.classList.add('p2');
       els.statusText.textContent = isBvb
-        ? 'Giliran Bot Kuning (Klik 1 Langkah atau Auto-Play)'
+        ? 'Giliran Bot Kuning...'
         : 'Giliran Bot AI (Kuning)...';
     }
   }
 
-  function renderInspector() {
-    const res = state.lastAiResult;
-    if (!res) {
-      els.algoBadge.textContent = 'Menunggu langkah Bot';
-      els.metricBestCol.textContent = '-';
-      els.metricBestScore.textContent = '-';
-      els.metricBestScore.className = 'metric-value';
-      els.metricNodes.textContent = '-';
-      els.metricTime.textContent = '-';
-    } else {
-      const algoName = res.isRandom
-        ? 'Random Move (Easy)'
-        : `${res.usePruning ? 'Alpha-Beta Pruning' : 'Minimax Murni'} • Depth ${res.maxDepth}`;
-      els.algoBadge.textContent = algoName;
-      els.metricBestCol.textContent = `Kol ${res.bestCol}`;
-      els.metricBestScore.textContent = formatScore(res.bestScore);
-      els.metricBestScore.className =
-        'metric-value ' + (res.bestScore > 0 ? 'positive' : res.bestScore < 0 ? 'negative' : '');
-      els.metricNodes.textContent = res.nodes.toLocaleString('id-ID');
-      els.metricTime.textContent = `${res.elapsedMs} ms`;
-    }
-
-    // Column Scores (0..6)
-    els.colScoresList.innerHTML = '';
-    const scores = res ? res.columnScores : null;
-    let maxAbs = 10;
-    if (scores) {
-      for (let c = 0; c < COLS; c++) {
-        if (scores[c] !== null && scores[c] !== undefined) {
-          const capped = Math.min(Math.abs(scores[c]), 200);
-          if (capped > maxAbs) maxAbs = capped;
-        }
-      }
-    }
-
-    for (let c = 0; c < COLS; c++) {
-      const rowEl = document.createElement('div');
-      rowEl.className = 'col-score-row';
-      const val = scores ? scores[c] : null;
-      const isChosen = res && res.bestCol === c;
-      if (isChosen) rowEl.classList.add('is-chosen');
-      if (scores && (val === null || val === undefined)) rowEl.classList.add('is-full');
-
-      const labelEl = document.createElement('span');
-      labelEl.textContent = `Kol ${c}${isChosen ? ' ★' : ''}`;
-
-      const trackEl = document.createElement('div');
-      trackEl.className = 'score-bar-track';
-      if (val !== null && val !== undefined) {
-        const fillEl = document.createElement('div');
-        fillEl.className = `score-bar-fill ${val >= 0 ? 'pos' : 'neg'}`;
-        const pct = Math.abs(val) >= WIN_SCORE - 100 ? 100 : Math.min(100, Math.max(4, (Math.abs(val) / maxAbs) * 100));
-        fillEl.style.width = `${pct}%`;
-        trackEl.appendChild(fillEl);
-      }
-
-      const valEl = document.createElement('span');
-      valEl.className = 'score-val';
-      valEl.textContent = scores ? formatScore(val) : '-';
-
-      rowEl.appendChild(labelEl);
-      rowEl.appendChild(trackEl);
-      rowEl.appendChild(valEl);
-      els.colScoresList.appendChild(rowEl);
-    }
-
-    // Scoring Legend ala Figgle (Eval Function Breakdown)
-    const info = AI_LIB.analyzeBoard(state.board, AI);
-    if (els.legendTotalBadge) {
-      els.legendTotalBadge.textContent = `Total: ${formatScore(info.totalScore)}`;
-    }
-
-    function renderMiniTiles(dots) {
-      return (
-        '<span class="mini-tiles">' +
-        dots.map((d) => `<span class="mini-tile"><span class="mini-dot ${d}"></span></span>`).join('') +
-        '</span>'
-      );
-    }
-
-    const legendRows = [
-      {
-        dots: ['ai', 'ai', 'ai', 'ai'],
-        label: '4-in-a-Row AI',
-        count: state.winner === AI ? 'Menang' : '0x',
-        pts: '+100000',
-      },
-      {
-        dots: ['ai', 'ai', 'ai', 'empty'],
-        label: '3 AI + 1 Kosong',
-        count: `${info.aiThree}x`,
-        pts: '+12',
-      },
-      {
-        dots: ['ai', 'ai', 'empty', 'empty'],
-        label: '2 AI + 2 Kosong',
-        count: `${info.aiTwo}x`,
-        pts: '+3',
-      },
-      {
-        dots: ['opp', 'opp', 'opp', 'empty'],
-        label: 'Ancaman 3 Lawan',
-        count: `${info.oppThree}x`,
-        pts: '-80',
-      },
-      {
-        dots: ['opp', 'opp', 'empty', 'empty'],
-        label: '2 Lawan + 2 Kosong',
-        count: `${info.oppTwo}x`,
-        pts: '-2',
-      },
-      {
-        dots: ['center'],
-        label: 'Kontrol Kolom Tengah',
-        count: `AI ${info.centerAi}:${info.centerOpp}`,
-        pts: `${info.centerScore >= 0 ? '+' : ''}${info.centerScore}`,
-      },
-    ];
-
-    els.heuristicGrid.innerHTML = '';
-    legendRows.forEach((row) => {
-      const el = document.createElement('div');
-      el.className = 'legend-score-row';
-      el.innerHTML = `
-        <div class="legend-pattern">
-          ${renderMiniTiles(row.dots)}
-          <span>${row.label}</span>
-        </div>
-        <div class="legend-right">
-          <span class="legend-live-count">${row.count}</span>
-          <span class="legend-points">${row.pts}</span>
-        </div>
-      `;
-      els.heuristicGrid.appendChild(el);
-    });
-  }
-
-  function renderMoveLog() {
-    if (state.moveLog.length === 0) {
-      els.moveLog.innerHTML = '<div class="move-log-empty">Belum ada langkah dimainkan.</div>';
+  function renderPostGameAnalysis(showPanel) {
+    if (!showPanel || !state.gameOver) {
+      els.arenaShell.classList.remove('has-analysis');
+      els.postGamePanel.style.display = 'none';
       return;
     }
-    els.moveLog.innerHTML = '';
-    for (let i = state.moveLog.length - 1; i >= 0; i--) {
-      const entry = state.moveLog[i];
-      const div = document.createElement('div');
-      div.className = 'move-log-item';
-      div.innerHTML = `<span>#${entry.step} • ${entry.actor} → Kol ${entry.col} (Baris ${entry.row})</span><span>${entry.detail}</span>`;
-      els.moveLog.appendChild(div);
+
+    els.arenaShell.classList.add('has-analysis');
+    els.postGamePanel.style.display = 'block';
+
+    const isBvb = state.gameMode === 'bvb';
+    els.postGameBanner.className = 'postgame-banner';
+    if (state.winner === 'DRAW') {
+      els.postGameBanner.classList.add('is-draw');
+      els.postGameTitle.textContent = 'Hasil Akhir: SERI!';
+      els.postGameSub.textContent = `Papan penuh setelah ${state.moveCount} langkah tanpa 4-in-a-row.`;
+    } else if (state.winner === HUMAN) {
+      els.postGameTitle.textContent = isBvb ? 'Bot Coral (Pemain 1) Menang!' : 'Selamat, Anda Menang!';
+      els.postGameSub.textContent = `4 bidak terhubung dalam total ${state.moveCount} langkah permainan.`;
+    } else {
+      els.postGameBanner.classList.add('is-bot-win');
+      els.postGameTitle.textContent = isBvb ? 'Bot Kuning (Pemain 2) Menang!' : 'Bot AI (Kuning) Menang!';
+      els.postGameSub.textContent = `Bot AI mengunci kemenangan pada langkah ke-${state.moveCount}.`;
+    }
+
+    const botEntries = state.moveLog.filter((m) => m.isBot);
+    const totalNodes = botEntries.reduce((acc, m) => acc + m.nodes, 0);
+    const totalTime = botEntries.reduce((acc, m) => acc + m.elapsedMs, 0);
+    const avgNodes = botEntries.length > 0 ? Math.round(totalNodes / botEntries.length) : 0;
+
+    els.statTotalMoves.textContent = String(state.moveCount);
+    els.statBotMoves.textContent = String(botEntries.length);
+    els.statAvgNodes.textContent = avgNodes.toLocaleString('id-ID');
+    els.statTotalTime.textContent = `${totalTime.toFixed(1)} ms`;
+
+    // Render step-by-step table
+    els.postGameTableBody.innerHTML = '';
+    state.moveLog.forEach((entry, idx) => {
+      const tr = document.createElement('tr');
+      if (entry.isBot) tr.classList.add('row-bot');
+      if (idx === state.moveLog.length - 1 && state.winner !== 'DRAW') tr.classList.add('row-win');
+      tr.innerHTML = `
+        <td>#${entry.step}</td>
+        <td>${entry.actor}</td>
+        <td>Kol ${entry.col} (R${entry.row})</td>
+        <td>${entry.scoreText}</td>
+        <td>${entry.isBot ? entry.nodes.toLocaleString('id-ID') : '-'}</td>
+        <td>${entry.isBot ? `${entry.elapsedMs} ms` : '-'}</td>
+      `;
+      els.postGameTableBody.appendChild(tr);
+    });
+
+    // Final Scoring Legend
+    const finalInfo = AI_LIB.analyzeBoard(state.board, AI);
+    els.legendTotalBadge.textContent = `Total: ${formatScore(finalInfo.totalScore)}`;
+    renderScoringLegend(els.heuristicGrid, finalInfo, state.winner);
+
+    if (state.compareTarget) {
+      els.compareContextText.textContent =
+        `Menguji posisi papan aktif pada langkah #${state.compareTarget.step} (sebelum langkah penutup) untuk membandingkan efisiensi pruning.`;
     }
   }
 
-  function renderAll() {
-    updateLegendAndModeButtons();
+  function renderAll(showPostGameNow = false) {
+    renderArenaHeaderAndStatus();
     renderBoard();
-    renderStatus();
-    renderInspector();
-    renderMoveLog();
-    els.undoBtn.disabled = state.history.length === 0 || state.isThinking;
+    renderPostGameAnalysis(state.gameOver && showPostGameNow);
   }
 
   function executeDrop(col, player, aiResult) {
     const row = AI_LIB.getNextOpenRow(state.board, col);
     if (row === -1) return false;
 
+    const preMoveBoard = AI_LIB.cloneBoard(state.board);
     saveSnapshot();
     AI_LIB.dropPiece(state.board, row, col, player);
     state.moveCount += 1;
     state.lastMove = { row, col, animate: true };
+
     if (aiResult) {
       state.lastAiResult = aiResult;
     }
 
-    const isBvb = els.gameModeSelect.value === 'bvb';
+    // Simpan posisi papan non-terminal terakhir untuk benchmark post-game
+    state.compareTarget = {
+      board: preMoveBoard,
+      aiPiece: player === HUMAN && state.gameMode === 'hvb' ? AI : player,
+      step: state.moveCount,
+    };
+
+    const isBvb = state.gameMode === 'bvb';
+    const isBot = isBvb || player === AI;
     const actor =
       player === HUMAN ? (isBvb ? 'Bot Coral' : 'Manusia') : isBvb ? 'Bot Kuning' : 'Bot AI';
-    const detail = aiResult
-      ? `eval ${formatScore(aiResult.bestScore)} | ${aiResult.nodes} node`
-      : `eval papan ${formatScore(AI_LIB.evaluateBoard(state.board, AI))}`;
 
-    state.moveLog.push({ step: state.moveCount, actor, col, row, detail });
+    const scoreText = aiResult
+      ? formatScore(aiResult.bestScore)
+      : formatScore(AI_LIB.evaluateBoard(state.board, AI));
+
+    state.moveLog.push({
+      step: state.moveCount,
+      actor,
+      col,
+      row,
+      isBot,
+      scoreText,
+      nodes: aiResult ? aiResult.nodes : 0,
+      elapsedMs: aiResult ? aiResult.elapsedMs : 0,
+    });
 
     const winInfo = AI_LIB.getWinnerInfo(state.board);
     if (winInfo.winner !== null) {
@@ -485,17 +563,23 @@
       state.winner = winInfo.winner;
       state.winCells = winInfo.cells;
       clearTimers();
-    } else {
-      state.currentPlayer = player === HUMAN ? AI : HUMAN;
+      renderAll(false);
+      // Tampilkan panel analisis setelah animasi bidak terakhir mendarat
+      state.postGameTimer = setTimeout(() => {
+        state.postGameTimer = null;
+        renderPostGameAnalysis(true);
+      }, 360);
+      return true;
     }
 
-    renderAll();
+    state.currentPlayer = player === HUMAN ? AI : HUMAN;
+    renderAll(false);
     return true;
   }
 
   function handleHumanMove(col) {
-    if (state.gameOver || state.isThinking) return;
-    if (els.gameModeSelect.value !== 'hvb' || state.currentPlayer !== HUMAN) return;
+    if (state.view !== 'game' || state.gameOver || state.isThinking) return;
+    if (state.gameMode !== 'hvb' || state.currentPlayer !== HUMAN) return;
     if (!AI_LIB.isValidLocation(state.board, col)) return;
 
     const moved = executeDrop(col, HUMAN, null);
@@ -506,29 +590,28 @@
 
   function scheduleBotTurn() {
     state.isThinking = true;
-    renderAll();
+    renderArenaHeaderAndStatus();
+    applyHoverVisuals();
 
     state.pendingBotTimer = setTimeout(() => {
       state.pendingBotTimer = null;
       if (state.gameOver) {
         state.isThinking = false;
-        renderAll();
+        renderArenaHeaderAndStatus();
         return;
       }
-      runSingleBotStep();
       state.isThinking = false;
-      renderAll();
-    }, 45);
+      runSingleBotStep();
+    }, 90);
   }
 
   function runSingleBotStep() {
     if (state.gameOver) return;
-    const isBvb = els.gameModeSelect.value === 'bvb';
+    const isBvb = state.gameMode === 'bvb';
     const piece = state.currentPlayer;
 
     let res;
     if (isBvb && piece === HUMAN) {
-      // Bot Merah di mode Bot vs Bot pakai Depth-Limited Minimax depth 3
       res = AI_LIB.chooseMove(state.board, {
         difficulty: 'Medium',
         aiPiece: HUMAN,
@@ -550,10 +633,26 @@
     }
   }
 
+  function startAutoPlayLoop() {
+    if (state.gameMode !== 'bvb' || state.gameOver) return;
+    if (state.autoPlayTimer) clearInterval(state.autoPlayTimer);
+    state.autoPlayPaused = false;
+    renderArenaHeaderAndStatus();
+
+    state.autoPlayTimer = setInterval(() => {
+      if (state.gameOver || state.autoPlayPaused) {
+        clearInterval(state.autoPlayTimer);
+        state.autoPlayTimer = null;
+        return;
+      }
+      runSingleBotStep();
+    }, 520);
+  }
+
   function resetGame() {
     clearTimers();
     state.board = AI_LIB.createBoard();
-    state.currentPlayer = Number(els.firstPlayerSelect.value);
+    state.currentPlayer = state.firstPlayer;
     state.gameOver = false;
     state.winner = null;
     state.winCells = [];
@@ -562,24 +661,38 @@
     state.moveCount = 0;
     state.moveLog = [];
     state.history = [];
+    state.compareTarget = null;
     state.hoverCol = -1;
+    state.autoPlayPaused = false;
 
     els.compareResult.innerHTML =
-      'Klik <strong>Bandingkan Node Sekarang</strong> kapan saja selama permainan untuk melihat hasil eksperimen langsung.';
+      'Klik <strong>Bandingkan Node</strong> untuk melihat perbandingan jumlah node Minimax Murni vs Alpha-Beta Pruning.';
 
-    renderAll();
+    renderAll(false);
 
-    if (els.gameModeSelect.value === 'hvb' && state.currentPlayer === AI) {
+    if (state.gameMode === 'bvb') {
+      startAutoPlayLoop();
+    } else if (state.currentPlayer === AI) {
       scheduleBotTurn();
     }
+  }
+
+  function startNewMatchFromMenu() {
+    syncMenuUI();
+    switchView('game');
+    resetGame();
+  }
+
+  function goToMenu() {
+    clearTimers();
+    switchView('menu');
   }
 
   function undoMove() {
     if (state.history.length === 0 || state.isThinking) return;
     clearTimers();
 
-    if (els.gameModeSelect.value === 'hvb') {
-      // Mundur ke giliran Manusia sebelumnya
+    if (state.gameMode === 'hvb') {
       let targetIdx = state.history.length - 1;
       while (targetIdx > 0 && state.history[targetIdx].currentPlayer !== HUMAN) {
         targetIdx--;
@@ -587,50 +700,37 @@
       const snap = state.history[targetIdx];
       state.history = state.history.slice(0, targetIdx);
       restoreSnapshot(snap);
+      renderAll(false);
       if (state.currentPlayer === AI && !state.gameOver) {
-        renderAll();
         scheduleBotTurn();
-        return;
       }
     } else {
+      state.autoPlayPaused = true;
       const snap = state.history.pop();
       restoreSnapshot(snap);
+      renderAll(false);
     }
-
-    renderAll();
   }
 
   function toggleAutoPlay() {
-    if (els.gameModeSelect.value !== 'bvb') return;
-    if (state.autoPlayTimer) {
-      clearInterval(state.autoPlayTimer);
-      state.autoPlayTimer = null;
-      els.autoPlayBtn.textContent = 'Auto-Play Bot vs Bot';
-      return;
-    }
-    if (state.gameOver) {
-      resetGame();
-    }
-    els.autoPlayBtn.textContent = 'Jeda Auto-Play';
-    state.autoPlayTimer = setInterval(() => {
-      if (state.gameOver) {
-        clearTimers();
-        renderAll();
-        return;
+    if (state.gameMode !== 'bvb' || state.gameOver) return;
+    if (state.autoPlayPaused) {
+      startAutoPlayLoop();
+    } else {
+      state.autoPlayPaused = true;
+      if (state.autoPlayTimer) {
+        clearInterval(state.autoPlayTimer);
+        state.autoPlayTimer = null;
       }
-      runSingleBotStep();
-    }, 380);
+      renderArenaHeaderAndStatus();
+    }
   }
 
-  function runComparison() {
-    if (state.gameOver) {
-      els.compareResult.innerHTML = 'Permainan sudah selesai. Tekan <strong>Reset Permainan</strong> untuk membandingkan pada posisi papan aktif.';
-      return;
-    }
-
+  function runPostGameComparison() {
+    const target = state.compareTarget;
+    if (!target) return;
     const depth = Number(els.compareDepthSelect.value);
-    const activePiece = els.gameModeSelect.value === 'bvb' ? state.currentPlayer : AI;
-    const comp = AI_LIB.compareAlgorithms(state.board, depth, activePiece);
+    const comp = AI_LIB.compareAlgorithms(target.board, depth, target.aiPiece);
 
     els.compareResult.innerHTML = `
       <table class="compare-table">
@@ -639,20 +739,20 @@
             <th>Algoritma (Depth ${comp.maxDepth})</th>
             <th>Kolom</th>
             <th>Skor Eval</th>
-            <th>Jumlah Node</th>
+            <th>Node</th>
             <th>Waktu</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Depth-Limited Minimax Murni</td>
+            <td>Depth-Limited Minimax</td>
             <td>Kol ${comp.pureMinimax.bestCol}</td>
             <td>${formatScore(comp.pureMinimax.bestScore)}</td>
             <td>${comp.pureMinimax.nodes.toLocaleString('id-ID')}</td>
             <td>${comp.pureMinimax.elapsedMs} ms</td>
           </tr>
           <tr>
-            <td>Depth-Limited + Alpha-Beta</td>
+            <td>Alpha-Beta Pruning</td>
             <td>Kol ${comp.alphaBeta.bestCol}</td>
             <td>${formatScore(comp.alphaBeta.bestScore)}</td>
             <td>${comp.alphaBeta.nodes.toLocaleString('id-ID')}</td>
@@ -661,56 +761,82 @@
         </tbody>
       </table>
       <div class="compare-summary">
-        Alpha-Beta Pruning memangkas <strong>${comp.reductionPct}%</strong> node pencarian (${(comp.pureMinimax.nodes - comp.alphaBeta.nodes).toLocaleString('id-ID')} node dihemat) dengan keputusan ${comp.sameDecision ? '100% IDENTIK' : 'berbeda'}.
+        Alpha-Beta memangkas <strong>${comp.reductionPct}%</strong> node pencarian (${(comp.pureMinimax.nodes - comp.alphaBeta.nodes).toLocaleString('id-ID')} node dihemat) dengan keputusan ${comp.sameDecision ? '100% IDENTIK' : 'berbeda'}.
       </div>
     `;
   }
 
   function bindEvents() {
-    els.difficultySelect.addEventListener('change', () => {
-      syncControlsWithDifficulty();
+    els.modeChoiceGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.choice-card');
+      if (!btn) return;
+      state.gameMode = btn.dataset.mode;
+      syncMenuUI();
     });
 
-    els.algorithmSelect.addEventListener('change', () => {
-      els.difficultySelect.value = 'Custom';
-      syncControlsWithDifficulty();
+    els.diffChoiceGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.choice-card');
+      if (!btn) return;
+      state.difficulty = btn.dataset.diff;
+      syncMenuUI();
     });
 
-    els.depthSelect.addEventListener('change', () => {
-      els.difficultySelect.value = 'Custom';
-      syncControlsWithDifficulty();
+    els.firstChoiceGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.choice-card');
+      if (!btn) return;
+      state.firstPlayer = Number(btn.dataset.first);
+      syncMenuUI();
     });
 
-    els.gameModeSelect.addEventListener('change', resetGame);
-    els.firstPlayerSelect.addEventListener('change', resetGame);
+    els.algorithmSelect.addEventListener('change', syncMenuUI);
+    els.depthSelect.addEventListener('change', syncMenuUI);
+
+    els.startGameBtn.addEventListener('click', startNewMatchFromMenu);
+    els.backMenuBtn.addEventListener('click', goToMenu);
+    els.postMenuBtn.addEventListener('click', goToMenu);
+    els.playAgainBtn.addEventListener('click', resetGame);
     els.resetBtn.addEventListener('click', resetGame);
     els.undoBtn.addEventListener('click', undoMove);
+
     els.botStepBtn.addEventListener('click', () => {
-      if (els.gameModeSelect.value === 'bvb' && !state.gameOver) {
+      if (state.gameMode === 'bvb' && !state.gameOver) {
+        state.autoPlayPaused = true;
+        if (state.autoPlayTimer) {
+          clearInterval(state.autoPlayTimer);
+          state.autoPlayTimer = null;
+        }
         runSingleBotStep();
       }
     });
     els.autoPlayBtn.addEventListener('click', toggleAutoPlay);
-    els.compareBtn.addEventListener('click', runComparison);
+    els.compareBtn.addEventListener('click', runPostGameComparison);
 
-    els.tabBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        els.tabBtns.forEach((b) => b.classList.remove('active'));
-        els.tabPanels.forEach((p) => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
-      });
+    els.openInfoBtn.addEventListener('click', () => {
+      renderScoringLegend(els.modalLegendList, null, null);
+      els.infoModal.style.display = 'flex';
+    });
+    els.closeInfoBtn.addEventListener('click', () => {
+      els.infoModal.style.display = 'none';
+    });
+    els.infoModal.addEventListener('click', (e) => {
+      if (e.target === els.infoModal) {
+        els.infoModal.style.display = 'none';
+      }
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+      if (e.key === 'Escape' && els.infoModal.style.display === 'flex') {
+        els.infoModal.style.display = 'none';
+        return;
+      }
+      if (state.view !== 'game' || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
       if (e.key >= '0' && e.key <= '6') {
         handleHumanMove(Number(e.key));
       }
     });
   }
 
-  syncControlsWithDifficulty();
+  syncMenuUI();
   bindEvents();
-  resetGame();
+  switchView('menu');
 })();
