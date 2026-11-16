@@ -49,6 +49,7 @@
     metricTime: document.getElementById('metricTime'),
     colScoresList: document.getElementById('colScoresList'),
     heuristicGrid: document.getElementById('heuristicGrid'),
+    legendTotalBadge: document.getElementById('legendTotalBadge'),
     compareBtn: document.getElementById('compareBtn'),
     compareResult: document.getElementById('compareResult'),
     moveLog: document.getElementById('moveLog'),
@@ -155,8 +156,8 @@
 
   function updateLegendAndModeButtons() {
     const isBvb = els.gameModeSelect.value === 'bvb';
-    els.p1LegendLabel.textContent = isBvb ? 'Pemain 1: Bot Merah (Depth 3)' : 'Pemain 1: Manusia (MIN)';
-    els.p2LegendLabel.textContent = isBvb ? 'Pemain 2: Bot Kuning (Konfigurasi Aktif)' : 'Pemain 2: Bot AI (MAX)';
+    els.p1LegendLabel.textContent = isBvb ? 'Pemain 1: Bot Coral (Depth 3)' : 'Pemain 1: Manusia (MIN • Coral)';
+    els.p2LegendLabel.textContent = isBvb ? 'Pemain 2: Bot Kuning (Konfigurasi Aktif)' : 'Pemain 2: Bot AI (MAX • Kuning)';
     els.botStepBtn.style.display = isBvb ? 'inline-flex' : 'none';
     els.autoPlayBtn.style.display = isBvb ? 'inline-flex' : 'none';
   }
@@ -265,10 +266,10 @@
         els.statusDot.classList.add(state.winner === HUMAN ? 'p1' : 'p2');
         if (isBvb) {
           els.statusText.textContent =
-            state.winner === HUMAN ? 'Bot Merah (Pemain 1) MENANG!' : 'Bot Kuning (Pemain 2) MENANG!';
+            state.winner === HUMAN ? 'Bot Coral (Pemain 1) MENANG!' : 'Bot Kuning (Pemain 2) MENANG!';
         } else {
           els.statusText.textContent =
-            state.winner === HUMAN ? 'Selamat! Manusia (Merah) MENANG!' : 'Bot AI (Kuning) MENANG!';
+            state.winner === HUMAN ? 'Selamat! Manusia (Coral) MENANG!' : 'Bot AI (Kuning) MENANG!';
         }
       }
       return;
@@ -285,13 +286,13 @@
       els.statusBanner.classList.add('turn-p1');
       els.statusDot.classList.add('p1');
       els.statusText.textContent = isBvb
-        ? 'Giliran Bot Merah (Klik Step atau Auto-Play)'
-        : 'Giliran Anda (Merah) — Pilih Kolom 0–6';
+        ? 'Giliran Bot Coral (Klik 1 Langkah atau Auto-Play)'
+        : 'Giliran Anda (Coral) — Pilih Kolom 0–6';
     } else {
       els.statusBanner.classList.add('turn-p2');
       els.statusDot.classList.add('p2');
       els.statusText.textContent = isBvb
-        ? 'Giliran Bot Kuning (Klik Step atau Auto-Play)'
+        ? 'Giliran Bot Kuning (Klik 1 Langkah atau Auto-Play)'
         : 'Giliran Bot AI (Kuning)...';
     }
   }
@@ -362,22 +363,74 @@
       els.colScoresList.appendChild(rowEl);
     }
 
-    // Heuristic Breakdown
+    // Scoring Legend ala Figgle (Eval Function Breakdown)
     const info = AI_LIB.analyzeBoard(state.board, AI);
-    const items = [
-      { label: 'Total Eval Statis (AI)', val: formatScore(info.totalScore) },
-      { label: 'Kontrol Kolom Tengah', val: `AI:${info.centerAi} vs Lwn:${info.centerOpp} (${info.centerScore >= 0 ? '+' : ''}${info.centerScore})` },
-      { label: 'AI 3-in-a-row (+12)', val: `${info.aiThree}` },
-      { label: 'AI 2-in-a-row (+3)', val: `${info.aiTwo}` },
-      { label: 'Ancaman Lawan 3-row (-80)', val: `${info.oppThree}` },
-      { label: 'Lawan 2-in-a-row (-2)', val: `${info.oppTwo}` },
+    if (els.legendTotalBadge) {
+      els.legendTotalBadge.textContent = `Total: ${formatScore(info.totalScore)}`;
+    }
+
+    function renderMiniTiles(dots) {
+      return (
+        '<span class="mini-tiles">' +
+        dots.map((d) => `<span class="mini-tile"><span class="mini-dot ${d}"></span></span>`).join('') +
+        '</span>'
+      );
+    }
+
+    const legendRows = [
+      {
+        dots: ['ai', 'ai', 'ai', 'ai'],
+        label: '4-in-a-Row AI',
+        count: state.winner === AI ? 'Menang' : '0x',
+        pts: '+100000',
+      },
+      {
+        dots: ['ai', 'ai', 'ai', 'empty'],
+        label: '3 AI + 1 Kosong',
+        count: `${info.aiThree}x`,
+        pts: '+12',
+      },
+      {
+        dots: ['ai', 'ai', 'empty', 'empty'],
+        label: '2 AI + 2 Kosong',
+        count: `${info.aiTwo}x`,
+        pts: '+3',
+      },
+      {
+        dots: ['opp', 'opp', 'opp', 'empty'],
+        label: 'Ancaman 3 Lawan',
+        count: `${info.oppThree}x`,
+        pts: '-80',
+      },
+      {
+        dots: ['opp', 'opp', 'empty', 'empty'],
+        label: '2 Lawan + 2 Kosong',
+        count: `${info.oppTwo}x`,
+        pts: '-2',
+      },
+      {
+        dots: ['center'],
+        label: 'Kontrol Kolom Tengah',
+        count: `AI ${info.centerAi}:${info.centerOpp}`,
+        pts: `${info.centerScore >= 0 ? '+' : ''}${info.centerScore}`,
+      },
     ];
+
     els.heuristicGrid.innerHTML = '';
-    items.forEach((item) => {
-      const box = document.createElement('div');
-      box.className = 'heur-item';
-      box.innerHTML = `<span>${item.label}</span><span class="heur-count">${item.val}</span>`;
-      els.heuristicGrid.appendChild(box);
+    legendRows.forEach((row) => {
+      const el = document.createElement('div');
+      el.className = 'legend-score-row';
+      el.innerHTML = `
+        <div class="legend-pattern">
+          ${renderMiniTiles(row.dots)}
+          <span>${row.label}</span>
+        </div>
+        <div class="legend-right">
+          <span class="legend-live-count">${row.count}</span>
+          <span class="legend-points">${row.pts}</span>
+        </div>
+      `;
+      els.heuristicGrid.appendChild(el);
     });
   }
 
@@ -419,7 +472,7 @@
 
     const isBvb = els.gameModeSelect.value === 'bvb';
     const actor =
-      player === HUMAN ? (isBvb ? 'Bot Merah' : 'Manusia') : isBvb ? 'Bot Kuning' : 'Bot AI';
+      player === HUMAN ? (isBvb ? 'Bot Coral' : 'Manusia') : isBvb ? 'Bot Kuning' : 'Bot AI';
     const detail = aiResult
       ? `eval ${formatScore(aiResult.bestScore)} | ${aiResult.nodes} node`
       : `eval papan ${formatScore(AI_LIB.evaluateBoard(state.board, AI))}`;
