@@ -52,7 +52,6 @@
     arenaShell: document.getElementById('arenaShell'),
 
     // Main Menu
-    menuConfigBadge: document.getElementById('menuConfigBadge'),
     modeChoiceGrid: document.getElementById('modeChoiceGrid'),
     diffChoiceGrid: document.getElementById('diffChoiceGrid'),
     firstChoiceGrid: document.getElementById('firstChoiceGrid'),
@@ -107,7 +106,6 @@
     compareBtn: document.getElementById('compareBtn'),
     compareContextText: document.getElementById('compareContextText'),
     compareResult: document.getElementById('compareResult'),
-    engineFooterBadge: document.getElementById('engineFooterBadge'),
   };
 
   function getAiConfig() {
@@ -154,7 +152,6 @@
     els.customConfigBox.style.display = state.difficulty === 'Custom' ? 'block' : 'none';
 
     const cfg = getAiConfig();
-    els.menuConfigBadge.textContent = cfg.label;
     els.activeConfigBadge.textContent = cfg.label;
   }
 
@@ -401,9 +398,9 @@
 
   function renderArenaHeaderAndStatus() {
     const isBvb = state.gameMode === 'bvb';
-    els.arenaPill.textContent = isBvb ? 'DEMO BOT VS BOT • TIM 12' : 'ARENA PERMAINAN • TIM 12';
-    els.p1LegendLabel.textContent = isBvb ? 'Pemain 1: Bot Coral (Depth 3)' : 'Pemain 1: Manusia (MIN • Coral)';
-    els.p2LegendLabel.textContent = isBvb ? 'Pemain 2: Bot Kuning (Konfigurasi Aktif)' : 'Pemain 2: Bot AI (MAX • Kuning)';
+    els.arenaPill.textContent = isBvb ? 'BOT VS BOT' : 'ARENA MAIN';
+    els.p1LegendLabel.textContent = isBvb ? 'Bot Coral (d=3)' : 'Manusia';
+    els.p2LegendLabel.textContent = isBvb ? 'Bot Kuning' : 'Bot AI';
 
     els.bvbBar.style.display = isBvb && !state.gameOver ? 'flex' : 'none';
     els.autoPlayBtn.textContent = state.autoPlayPaused ? 'Lanjut Auto-Play' : 'Jeda Auto-Play';
@@ -412,11 +409,10 @@
     els.undoBtn.disabled = state.history.length === 0 || state.isThinking;
 
     if (state.lastAiResult) {
-      els.lastMovePill.textContent = `Bot → Kol ${state.lastAiResult.bestCol} (eval ${formatScore(state.lastAiResult.bestScore)})`;
-    } else if (state.lastMove) {
-      els.lastMovePill.textContent = `Terakhir → Kol ${state.lastMove.col}`;
+      els.lastMovePill.style.display = 'inline-block';
+      els.lastMovePill.textContent = `Kol ${state.lastAiResult.bestCol} (${formatScore(state.lastAiResult.bestScore)})`;
     } else {
-      els.lastMovePill.textContent = 'Siap Main';
+      els.lastMovePill.style.display = 'none';
     }
 
     els.statusBanner.className = 'status-banner';
@@ -436,7 +432,7 @@
             state.winner === HUMAN ? 'Bot Coral (Pemain 1) MENANG!' : 'Bot Kuning (Pemain 2) MENANG!';
         } else {
           els.statusText.textContent =
-            state.winner === HUMAN ? 'Selamat! Manusia (Coral) MENANG!' : 'Bot AI (Kuning) MENANG!';
+            state.winner === HUMAN ? 'Selamat! Anda MENANG!' : 'Bot AI MENANG!';
         }
       }
       return;
@@ -445,7 +441,7 @@
     if (state.isThinking) {
       els.statusBanner.classList.add(state.currentPlayer === HUMAN ? 'turn-p1' : 'turn-p2');
       els.statusDot.classList.add(state.currentPlayer === HUMAN ? 'p1' : 'p2');
-      els.statusText.textContent = 'Bot AI sedang mengevaluasi Game Tree';
+      els.statusText.textContent = 'Bot AI sedang berpikir';
       els.thinkingDots.classList.add('active');
       return;
     }
@@ -455,13 +451,13 @@
       els.statusDot.classList.add('p1');
       els.statusText.textContent = isBvb
         ? 'Giliran Bot Coral...'
-        : 'Giliran Anda (Coral) — Pilih Kolom 0–6';
+        : 'Giliran Anda — Pilih Kolom 0–6';
     } else {
       els.statusBanner.classList.add('turn-p2');
       els.statusDot.classList.add('p2');
       els.statusText.textContent = isBvb
         ? 'Giliran Bot Kuning...'
-        : 'Giliran Bot AI (Kuning)...';
+        : 'Giliran Bot AI...';
     }
   }
 
@@ -878,10 +874,6 @@
         handleHumanMove(Number(e.key));
       }
     });
-  }
-
-  if (els.engineFooterBadge && window.ConnectFourBridge && window.ConnectFourBridge.label) {
-    els.engineFooterBadge.textContent = window.ConnectFourBridge.label;
   }
 
   syncMenuUI();
