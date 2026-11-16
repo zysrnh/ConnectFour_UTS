@@ -50,7 +50,7 @@ ConnectFour_UTS/
 ## Cara Menjalankan
 
 ### 1. Google Colab
-Klik tombol **Open in Colab** di bagian atas README ini, lalu pilih **Runtime → Run all** untuk menjalankan pemodelan, pengujian taktis, benchmark Minimax vs Alpha-Beta Pruning, dan simulasi turnamen secara otomatis. Untuk bermain interaktif di Colab, ubah `JALANKAN_GAME_INTERAKTIF = True` pada sel terakhir.
+Klik tombol **Open in Colab** di bagian atas README ini, lalu pilih **Runtime → Run all** untuk menjalankan pemodelan, pengujian taktis, benchmark Minimax vs Alpha-Beta Pruning, simulasi turnamen, serta menampilkan **Arena UI Visual Interaktif (`ipywidgets`)** pada Bagian 6A secara otomatis. Untuk alternatif mode teks konsol, ubah `JALANKAN_GAME_INTERAKTIF = True` pada Bagian 6B.
 
 ### 2. Live Demo via GitHub Pages
 1. Buka tab **Settings → Pages** pada repository GitHub ini.
