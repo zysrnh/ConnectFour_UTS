@@ -2,9 +2,10 @@
  * Connect-Four AI Engine — TIM 12 UTS PjBL Kecerdasan Buatan
  * Sinkron 1:1 dengan implementasi Python di Praktikum_AI_UTS_TIM12.ipynb.
  *
- * Metode:
+ * Fitur:
  * - Adversarial Search: Depth-Limited Minimax & Alpha-Beta Pruning
- * - Heuristic Board Evaluation Function (4-cell window + kontrol kolom tengah)
+ * - Heuristic Board Evaluation Function (69 window + kontrol tengah + bonus Star Tiles)
+ * - Dukungan variasi papan: Classic, Obstacle Tiles (BLOCKED = -1), dan Star Bonus Tiles
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -19,6 +20,7 @@
   const COLS = 7;
   const WINDOW_LENGTH = 4;
 
+  const BLOCKED = -1;
   const EMPTY = 0;
   const HUMAN = 1;
   const AI = 2;
@@ -33,6 +35,7 @@
     OPP_THREE: -80,
     OPP_TWO: -2,
     CENTER_PER_DISC: 4,
+    STAR_BONUS: 6,
   };
 
   const DIFFICULTY_PRESETS = {
@@ -53,6 +56,53 @@
   }
 
   /**
+   * Buat konfigurasi awal papan sesuai mode ('classic', 'obstacle', 'star').
+   * Mengembalikan { board, starCells, obstacles }.
+   */
+  function createSpecialSetup(boardMode = 'classic') {
+    const board = createBoard();
+    const starCells = [];
+    const obstacles = [];
+
+    if (boardMode === 'obstacle') {
+      const candidateCols = [0, 1, 2, 4, 5, 6];
+      for (let i = candidateCols.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = candidateCols[i];
+        candidateCols[i] = candidateCols[j];
+        candidateCols[j] = tmp;
+      }
+      const chosen = candidateCols.slice(0, 3);
+      // Tempatkan 4 batu rintangan menapak di dasar papan (3 kolom: 1 batu + 2 batu bertumpuk + 1 batu)
+      const spots = [
+        [ROWS - 1, chosen[0]],
+        [ROWS - 1, chosen[1]],
+        [ROWS - 2, chosen[1]],
+        [ROWS - 1, chosen[2]],
+      ];
+      spots.forEach(([r, c]) => {
+        board[r][c] = BLOCKED;
+        obstacles.push([r, c]);
+      });
+    } else if (boardMode === 'star') {
+      const colPool = [1, 2, 3, 4, 5];
+      for (let i = colPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = colPool[i];
+        colPool[i] = colPool[j];
+        colPool[j] = tmp;
+      }
+      const rowPool = [2, 3, 4, 5];
+      for (let i = 0; i < 3; i++) {
+        const r = rowPool[Math.floor(Math.random() * rowPool.length)];
+        starCells.push([r, colPool[i]]);
+      }
+    }
+
+    return { board, starCells, obstacles };
+  }
+
+  /**
    * Salin papan 2D secara mendalam.
    */
   function cloneBoard(board) {
@@ -60,7 +110,7 @@
   }
 
   /**
-   * Cek apakah kolom masih memiliki ruang kosong.
+   * Cek apakah kolom masih memiliki ruang kosong di paling atas.
    */
   function isValidLocation(board, col) {
     return col >= 0 && col < COLS && board[0][col] === EMPTY;
@@ -104,11 +154,13 @@
    * Mengembalikan { winner: 1 | 2 | 'DRAW' | null, cells: [[r, c], ...] }.
    */
   function getWinnerInfo(board) {
+    const isPlayer = (p) => p === HUMAN || p === AI;
+
     // Cek horizontal
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
         const p = board[r][c];
-        if (p !== EMPTY && p === board[r][c + 1] && p === board[r][c + 2] && p === board[r][c + 3]) {
+        if (isPlayer(p) && p === board[r][c + 1] && p === board[r][c + 2] && p === board[r][c + 3]) {
           return { winner: p, cells: [[r, c], [r, c + 1], [r, c + 2], [r, c + 3]] };
         }
       }
@@ -118,7 +170,7 @@
     for (let c = 0; c < COLS; c++) {
       for (let r = 0; r <= ROWS - WINDOW_LENGTH; r++) {
         const p = board[r][c];
-        if (p !== EMPTY && p === board[r + 1][c] && p === board[r + 2][c] && p === board[r + 3][c]) {
+        if (isPlayer(p) && p === board[r + 1][c] && p === board[r + 2][c] && p === board[r + 3][c]) {
           return { winner: p, cells: [[r, c], [r + 1, c], [r + 2, c], [r + 3, c]] };
         }
       }
@@ -128,7 +180,7 @@
     for (let r = 0; r <= ROWS - WINDOW_LENGTH; r++) {
       for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
         const p = board[r][c];
-        if (p !== EMPTY && p === board[r + 1][c + 1] && p === board[r + 2][c + 2] && p === board[r + 3][c + 3]) {
+        if (isPlayer(p) && p === board[r + 1][c + 1] && p === board[r + 2][c + 2] && p === board[r + 3][c + 3]) {
           return { winner: p, cells: [[r, c], [r + 1, c + 1], [r + 2, c + 2], [r + 3, c + 3]] };
         }
       }
@@ -138,21 +190,14 @@
     for (let r = WINDOW_LENGTH - 1; r < ROWS; r++) {
       for (let c = 0; c <= COLS - WINDOW_LENGTH; c++) {
         const p = board[r][c];
-        if (p !== EMPTY && p === board[r - 1][c + 1] && p === board[r - 2][c + 2] && p === board[r - 3][c + 3]) {
+        if (isPlayer(p) && p === board[r - 1][c + 1] && p === board[r - 2][c + 2] && p === board[r - 3][c + 3]) {
           return { winner: p, cells: [[r, c], [r - 1, c + 1], [r - 2, c + 2], [r - 3, c + 3]] };
         }
       }
     }
 
-    // Cek seri jika baris paling atas sudah penuh
-    let full = true;
-    for (let c = 0; c < COLS; c++) {
-      if (board[0][c] === EMPTY) {
-        full = false;
-        break;
-      }
-    }
-    if (full) {
+    // Cek seri jika semua kolom teratas penuh
+    if (getValidLocations(board).length === 0) {
       return { winner: 'DRAW', cells: [] };
     }
 
@@ -168,6 +213,7 @@
 
   /**
    * Hitung skor satu jendela berisi 4 petak dari sudut pandang aiPiece.
+   * Jendela yang mengandung petak BLOCKED bernilai 0 karena tidak bisa menjadi 4-in-a-row.
    */
   function evaluateWindow(windowCells, aiPiece) {
     const oppPiece = aiPiece === HUMAN ? AI : HUMAN;
@@ -176,13 +222,11 @@
     let emptyCount = 0;
 
     for (let i = 0; i < windowCells.length; i++) {
-      if (windowCells[i] === aiPiece) {
-        aiCount++;
-      } else if (windowCells[i] === oppPiece) {
-        oppCount++;
-      } else {
-        emptyCount++;
-      }
+      const cell = windowCells[i];
+      if (cell === BLOCKED) return 0;
+      if (cell === aiPiece) aiCount++;
+      else if (cell === oppPiece) oppCount++;
+      else emptyCount++;
     }
 
     if (aiCount === 4) return EVAL_WEIGHTS.WIN;
@@ -197,7 +241,7 @@
   /**
    * Analisis papan menyeluruh: menghitung total skor evaluasi sekaligus rincian fitur heuristik.
    */
-  function analyzeBoard(board, aiPiece = AI) {
+  function analyzeBoard(board, aiPiece = AI, starCells = []) {
     const oppPiece = aiPiece === HUMAN ? AI : HUMAN;
     const centerCol = Math.floor(COLS / 2);
 
@@ -219,6 +263,7 @@
       let oppCount = 0;
       let emptyCount = 0;
       for (let i = 0; i < 4; i++) {
+        if (w[i] === BLOCKED) return;
         if (w[i] === aiPiece) aiCount++;
         else if (w[i] === oppPiece) oppCount++;
         else emptyCount++;
@@ -258,12 +303,26 @@
       }
     }
 
+    let starAi = 0;
+    let starOpp = 0;
+    if (Array.isArray(starCells) && starCells.length > 0) {
+      for (let i = 0; i < starCells.length; i++) {
+        const [sr, sc] = starCells[i];
+        if (board[sr][sc] === aiPiece) starAi++;
+        else if (board[sr][sc] === oppPiece) starOpp++;
+      }
+    }
+
     const centerScore = (centerAi - centerOpp) * EVAL_WEIGHTS.CENTER_PER_DISC;
+    const starScore = (starAi - starOpp) * EVAL_WEIGHTS.STAR_BONUS;
     return {
-      totalScore: windowScore + centerScore,
+      totalScore: windowScore + centerScore + starScore,
       centerAi,
       centerOpp,
       centerScore,
+      starAi,
+      starOpp,
+      starScore,
       aiThree,
       aiTwo,
       oppThree,
@@ -275,14 +334,14 @@
   /**
    * Fungsi Evaluasi Papan (Evaluation Function) untuk non-terminal state.
    */
-  function evaluateBoard(board, aiPiece = AI) {
-    return analyzeBoard(board, aiPiece).totalScore;
+  function evaluateBoard(board, aiPiece = AI, starCells = []) {
+    return analyzeBoard(board, aiPiece, starCells).totalScore;
   }
 
   /**
    * Depth-Limited Minimax Murni (tanpa Alpha-Beta Pruning).
    */
-  function minimax(board, depth, maxDepth, isMaximizing, aiPiece, stats) {
+  function minimax(board, depth, maxDepth, isMaximizing, aiPiece, stats, starCells = []) {
     stats.nodes += 1;
     const oppPiece = aiPiece === HUMAN ? AI : HUMAN;
 
@@ -292,7 +351,7 @@
     if (winner === 'DRAW') return 0;
 
     if (depth >= maxDepth) {
-      return evaluateBoard(board, aiPiece);
+      return evaluateBoard(board, aiPiece, starCells);
     }
 
     const validCols = getValidLocations(board);
@@ -303,11 +362,9 @@
         const col = validCols[i];
         const row = getNextOpenRow(board, col);
         board[row][col] = aiPiece;
-        const score = minimax(board, depth + 1, maxDepth, false, aiPiece, stats);
+        const score = minimax(board, depth + 1, maxDepth, false, aiPiece, stats, starCells);
         board[row][col] = EMPTY;
-        if (score > bestScore) {
-          bestScore = score;
-        }
+        if (score > bestScore) bestScore = score;
       }
       return bestScore;
     }
@@ -317,11 +374,9 @@
       const col = validCols[i];
       const row = getNextOpenRow(board, col);
       board[row][col] = oppPiece;
-      const score = minimax(board, depth + 1, maxDepth, true, aiPiece, stats);
+      const score = minimax(board, depth + 1, maxDepth, true, aiPiece, stats, starCells);
       board[row][col] = EMPTY;
-      if (score < bestScore) {
-        bestScore = score;
-      }
+      if (score < bestScore) bestScore = score;
     }
     return bestScore;
   }
@@ -329,7 +384,7 @@
   /**
    * Depth-Limited Minimax dengan optimasi Alpha-Beta Pruning.
    */
-  function minimaxAlphaBeta(board, depth, maxDepth, alpha, beta, isMaximizing, aiPiece, stats) {
+  function minimaxAlphaBeta(board, depth, maxDepth, alpha, beta, isMaximizing, aiPiece, stats, starCells = []) {
     stats.nodes += 1;
     const oppPiece = aiPiece === HUMAN ? AI : HUMAN;
 
@@ -339,7 +394,7 @@
     if (winner === 'DRAW') return 0;
 
     if (depth >= maxDepth) {
-      return evaluateBoard(board, aiPiece);
+      return evaluateBoard(board, aiPiece, starCells);
     }
 
     const validCols = getValidLocations(board);
@@ -350,7 +405,7 @@
         const col = validCols[i];
         const row = getNextOpenRow(board, col);
         board[row][col] = aiPiece;
-        const evalScore = minimaxAlphaBeta(board, depth + 1, maxDepth, alpha, beta, false, aiPiece, stats);
+        const evalScore = minimaxAlphaBeta(board, depth + 1, maxDepth, alpha, beta, false, aiPiece, stats, starCells);
         board[row][col] = EMPTY;
         if (evalScore > maxEval) maxEval = evalScore;
         if (maxEval > alpha) alpha = maxEval;
@@ -364,7 +419,7 @@
       const col = validCols[i];
       const row = getNextOpenRow(board, col);
       board[row][col] = oppPiece;
-      const evalScore = minimaxAlphaBeta(board, depth + 1, maxDepth, alpha, beta, true, aiPiece, stats);
+      const evalScore = minimaxAlphaBeta(board, depth + 1, maxDepth, alpha, beta, true, aiPiece, stats, starCells);
       board[row][col] = EMPTY;
       if (evalScore < minEval) minEval = evalScore;
       if (minEval < beta) beta = minEval;
@@ -380,6 +435,7 @@
     const maxDepth = options.maxDepth !== undefined ? options.maxDepth : 4;
     const aiPiece = options.aiPiece !== undefined ? options.aiPiece : AI;
     const usePruning = options.usePruning !== undefined ? options.usePruning : true;
+    const starCells = options.starCells || [];
 
     const workingBoard = cloneBoard(board);
     const validCols = getValidLocations(workingBoard);
@@ -414,8 +470,8 @@
       workingBoard[row][col] = aiPiece;
 
       const score = usePruning
-        ? minimaxAlphaBeta(workingBoard, 1, maxDepth, alpha, beta, false, aiPiece, stats)
-        : minimax(workingBoard, 1, maxDepth, false, aiPiece, stats);
+        ? minimaxAlphaBeta(workingBoard, 1, maxDepth, alpha, beta, false, aiPiece, stats, starCells)
+        : minimax(workingBoard, 1, maxDepth, false, aiPiece, stats, starCells);
 
       workingBoard[row][col] = EMPTY;
       columnScores[col] = score;
@@ -449,6 +505,7 @@
   function chooseMove(board, options = {}) {
     const difficulty = options.difficulty || 'Hard';
     const aiPiece = options.aiPiece !== undefined ? options.aiPiece : AI;
+    const starCells = options.starCells || [];
     const preset = DIFFICULTY_PRESETS[difficulty] || DIFFICULTY_PRESETS.Hard;
 
     if (difficulty === 'Easy' && options.customDepth === undefined) {
@@ -466,7 +523,7 @@
         const c = validCols[i];
         const r = getNextOpenRow(workingBoard, c);
         workingBoard[r][c] = aiPiece;
-        columnScores[c] = evaluateBoard(workingBoard, aiPiece);
+        columnScores[c] = evaluateBoard(workingBoard, aiPiece, starCells);
         workingBoard[r][c] = EMPTY;
       }
       const randomCol = validCols[Math.floor(Math.random() * validCols.length)];
@@ -486,7 +543,7 @@
     const maxDepth = options.customDepth !== undefined ? options.customDepth : preset.maxDepth;
     const usePruning = options.usePruning !== undefined ? options.usePruning : preset.usePruning;
 
-    const result = findBestMove(board, { maxDepth, aiPiece, usePruning });
+    const result = findBestMove(board, { maxDepth, aiPiece, usePruning, starCells });
     result.isRandom = false;
     return result;
   }
@@ -494,9 +551,9 @@
   /**
    * Jalankan perbandingan langsung Minimax Murni vs Alpha-Beta Pruning pada papan saat ini.
    */
-  function compareAlgorithms(board, maxDepth = 4, aiPiece = AI) {
-    const pureMinimax = findBestMove(board, { maxDepth, aiPiece, usePruning: false });
-    const alphaBeta = findBestMove(board, { maxDepth, aiPiece, usePruning: true });
+  function compareAlgorithms(board, maxDepth = 4, aiPiece = AI, starCells = []) {
+    const pureMinimax = findBestMove(board, { maxDepth, aiPiece, usePruning: false, starCells });
+    const alphaBeta = findBestMove(board, { maxDepth, aiPiece, usePruning: true, starCells });
 
     const reductionPct =
       pureMinimax.nodes > 0
@@ -516,6 +573,7 @@
     ROWS,
     COLS,
     WINDOW_LENGTH,
+    BLOCKED,
     EMPTY,
     HUMAN,
     AI,
@@ -524,6 +582,7 @@
     EVAL_WEIGHTS,
     DIFFICULTY_PRESETS,
     createBoard,
+    createSpecialSetup,
     cloneBoard,
     isValidLocation,
     getValidLocations,

@@ -59,7 +59,6 @@
         </div>
 
         <div class="hero-body home-body">
-          <!-- Ilustrasi Mini Board Retro -->
           <div class="showcase-wrap" aria-hidden="true">
             <div class="showcase-board">
               <div class="sc-cell"></div>
@@ -134,7 +133,7 @@
 
         <div class="setup-head">
           <button type="button" class="btn btn-sm" id="backHomeBtn">&larr; Menu</button>
-          <span class="setup-head-title">Pilih Lawan &amp; Level AI</span>
+          <span class="setup-head-title">Pilih Mode &amp; Level</span>
           <span class="badge badge-accent" id="setupPreviewBadge">Hard • d=5</span>
         </div>
 
@@ -142,29 +141,64 @@
           <div class="menu-section">
             <label class="menu-label">1. Mode Permainan</label>
             <div class="choice-grid cols-2-always" id="modeChoiceGrid">
-              <button type="button" class="choice-card visual-card active" data-mode="hvb">
+              <button type="button" class="choice-card compact-row-card active" data-mode="hvb">
                 <div class="vc-icon-row">
                   <span class="mini-disc coral"></span>
                   <span class="vs-tag">VS</span>
                   <span class="bot-chip yellow">AI</span>
                 </div>
-                <strong>Manusia vs AI</strong>
-                <span>Tantang Bot langsung</span>
+                <div>
+                  <strong>Manusia vs AI</strong>
+                  <span>Tantang Bot</span>
+                </div>
               </button>
-              <button type="button" class="choice-card visual-card" data-mode="bvb">
+              <button type="button" class="choice-card compact-row-card" data-mode="bvb">
                 <div class="vc-icon-row">
                   <span class="bot-chip coral">AI</span>
                   <span class="vs-tag">VS</span>
                   <span class="bot-chip yellow">AI</span>
                 </div>
-                <strong>Bot vs Bot</strong>
-                <span>Simulasi duel AI</span>
+                <div>
+                  <strong>Bot vs Bot</strong>
+                  <span>Duel 2 agen AI</span>
+                </div>
               </button>
             </div>
           </div>
 
           <div class="menu-section">
-            <label class="menu-label">2. Tingkat Kesulitan</label>
+            <div class="label-row-split">
+              <label class="menu-label" style="margin-bottom: 0;">2. Mode Papan &amp; Tiles</label>
+              <div class="shape-toggle" id="tileShapeGrid" role="group" aria-label="Bentuk Tiles">
+                <button type="button" class="shape-btn active" data-shape="circle" title="Bidak Bulat">
+                  <span class="shape-ico circle"></span>Bulat
+                </button>
+                <button type="button" class="shape-btn" data-shape="square" title="Tile Kotak Retro">
+                  <span class="shape-ico square"></span>Kotak
+                </button>
+              </div>
+            </div>
+            <div class="choice-grid cols-3-always" id="boardModeGrid">
+              <button type="button" class="choice-card tile-mode-card active" data-bmode="classic">
+                <span class="tile-badge blue">4×</span>
+                <strong>Klasik</strong>
+                <span>Papan standar</span>
+              </button>
+              <button type="button" class="choice-card tile-mode-card" data-bmode="obstacle">
+                <span class="tile-badge stone">&#x2715;</span>
+                <strong>Obstacle</strong>
+                <span>4 batu rintangan</span>
+              </button>
+              <button type="button" class="choice-card tile-mode-card" data-bmode="star">
+                <span class="tile-badge star">&#9733;</span>
+                <strong>Star +6</strong>
+                <span>3 petak bonus</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="menu-section">
+            <label class="menu-label">3. Tingkat Kesulitan</label>
             <div class="choice-grid cols-2-always" id="diffChoiceGrid">
               <button type="button" class="choice-card diff-card" data-diff="Easy">
                 <div class="diff-top">
@@ -226,20 +260,27 @@
           </div>
 
           <div class="menu-section">
-            <label class="menu-label">3. Jalan Pertama</label>
-            <div class="choice-grid cols-2-always" id="firstChoiceGrid">
+            <label class="menu-label">4. Jalan Pertama</label>
+            <div class="choice-grid cols-3-always" id="firstChoiceGrid">
               <button type="button" class="choice-card first-card active" data-first="1">
                 <span class="first-disc coral"></span>
                 <div>
                   <strong id="firstP1Title">Manusia</strong>
-                  <span>Bidak Coral</span>
+                  <span>Coral</span>
                 </div>
               </button>
               <button type="button" class="choice-card first-card" data-first="2">
                 <span class="first-disc yellow"></span>
                 <div>
                   <strong>Bot AI</strong>
-                  <span>Bidak Kuning</span>
+                  <span>Kuning</span>
+                </div>
+              </button>
+              <button type="button" class="choice-card first-card" data-first="random">
+                <span class="first-disc random">?</span>
+                <div>
+                  <strong>Acak</strong>
+                  <span>Undi 50:50</span>
                 </div>
               </button>
             </div>
@@ -303,13 +344,14 @@
               <div class="board-grid" id="boardGrid" role="grid" aria-label="Papan Connect-Four 6 baris 7 kolom"></div>
               <div class="board-legend">
                 <span class="legend-item">
-                  <span class="legend-swatch p1"></span>
+                  <span class="legend-swatch p1" id="p1Swatch"></span>
                   <span id="p1LegendLabel">Manusia</span>
                 </span>
                 <span class="legend-item">
-                  <span class="legend-swatch p2"></span>
+                  <span class="legend-swatch p2" id="p2Swatch"></span>
                   <span id="p2LegendLabel">Bot AI</span>
                 </span>
+                <span class="legend-item" id="specialTileLegend" style="display: none;"></span>
               </div>
             </div>
           </div>
@@ -401,28 +443,28 @@
 
   <!-- MODAL ALUR & ATURAN MAIN -->
   <div class="modal-backdrop" id="rulesModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
-    <div class="card modal-card animate-pop-in">
+    <div class="card modal-card">
       <div class="card-header">
-        <h2 class="card-title" id="rulesModalTitle">Alur &amp; Aturan Main Connect-Four</h2>
+        <h2 class="card-title" id="rulesModalTitle">Alur &amp; Mode Permainan</h2>
         <button type="button" class="btn btn-sm btn-coral" id="closeRulesBtn">Tutup</button>
       </div>
 
       <div class="flow-steps">
         <div class="flow-step">
           <span class="flow-num">1</span>
-          <div><strong>Pilih Mode &amp; Level:</strong> Masuk ke menu Setup, pilih lawan dan tingkat kesulitan Bot AI.</div>
+          <div><strong>Setup:</strong> Pilih Mode, Tipe Papan (<em>Klasik</em>, <em>Obstacle</em>, atau <em>Star</em>), Bentuk Tiles (<em>Bulat / Kotak</em>), Level AI, &amp; giliran pertama (bisa <strong>Acak</strong>).</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">2</span>
-          <div><strong>Jatuhkan Bidak:</strong> Klik kolom <code>K0–K6</code> (atau tekan tombol angka <code>0–6</code>), bidak jatuh ke baris kosong terbawah.</div>
+          <div><strong>Jatuhkan Bidak:</strong> Klik kolom <code>K0–K6</code> (atau keyboard <code>0–6</code>), bidak jatuh ke petak kosong terbawah.</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">3</span>
-          <div><strong>Hubungkan 4 Bidak:</strong> Pemain pertama yang menyusun 4 bidak beruntun menang.</div>
+          <div><strong>Mode Spesial:</strong> Di <em>Obstacle</em> ada 4 batu yang memblokir jalur 4-in-a-row; di <em>Star</em> ada 3 petak <code>&#9733;</code> bernilai bonus skor evaluasi <code>+6</code>.</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">4</span>
-          <div><strong>Analisis AI:</strong> Setelah selesai, tabel evaluasi langkah dan perbandingan node langsung muncul.</div>
+          <div><strong>Analisis AI:</strong> Setelah permainan selesai, tabel skor evaluasi &amp; perbandingan Minimax vs Alpha-Beta langsung muncul.</div>
         </div>
       </div>
 
@@ -454,7 +496,7 @@
 
   <!-- MODAL INFO BOBOT EVAL & CARA KERJA AI -->
   <div class="modal-backdrop" id="infoModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
-    <div class="card modal-card animate-pop-in">
+    <div class="card modal-card">
       <div class="card-header">
         <h2 class="card-title" id="infoModalTitle">Cara Kerja AI &amp; Bobot Skor</h2>
         <button type="button" class="btn btn-sm btn-coral" id="closeInfoBtn">Tutup</button>
