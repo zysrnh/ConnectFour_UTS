@@ -22,11 +22,28 @@
     compareTarget: null,
     isThinking: false,
     autoPlayPaused: false,
+    matchGeneration: 0,
     autoPlayTimer: null,
     pendingBotTimer: null,
     postGameTimer: null,
     hoverCol: -1,
   };
+
+  async function requestBotMove(board, options) {
+    const bridge = window.ConnectFourBridge;
+    if (bridge && typeof bridge.chooseMove === 'function') {
+      return await bridge.chooseMove(board, options);
+    }
+    return AI_LIB.chooseMove(board, options);
+  }
+
+  async function requestCompare(board, depth, aiPiece) {
+    const bridge = window.ConnectFourBridge;
+    if (bridge && typeof bridge.compareAlgorithms === 'function') {
+      return await bridge.compareAlgorithms(board, depth, aiPiece);
+    }
+    return AI_LIB.compareAlgorithms(board, depth, aiPiece);
+  }
 
   const els = {
     // Views
@@ -90,6 +107,7 @@
     compareBtn: document.getElementById('compareBtn'),
     compareContextText: document.getElementById('compareContextText'),
     compareResult: document.getElementById('compareResult'),
+    engineFooterBadge: document.getElementById('engineFooterBadge'),
   };
 
   function getAiConfig() {
@@ -146,7 +164,7 @@
       state.pendingBotTimer = null;
     }
     if (state.autoPlayTimer) {
-      clearInterval(state.autoPlayTimer);
+      clearTimeout(state.autoPlayTimer);
       state.autoPlayTimer = null;
     }
     if (state.postGameTimer) {
@@ -589,30 +607,34 @@
   }
 
   function scheduleBotTurn() {
+    const gen = state.matchGeneration;
     state.isThinking = true;
     renderArenaHeaderAndStatus();
     applyHoverVisuals();
 
-    state.pendingBotTimer = setTimeout(() => {
+    state.pendingBotTimer = setTimeout(async () => {
       state.pendingBotTimer = null;
-      if (state.gameOver) {
+      if (state.gameOver || gen !== state.matchGeneration) {
         state.isThinking = false;
         renderArenaHeaderAndStatus();
         return;
       }
-      state.isThinking = false;
-      runSingleBotStep();
-    }, 90);
+      await runSingleBotStep(gen);
+    }, 60);
   }
 
-  function runSingleBotStep() {
-    if (state.gameOver) return;
+  async function runSingleBotStep(expectedGen = state.matchGeneration) {
+    if (state.gameOver || expectedGen !== state.matchGeneration) return;
     const isBvb = state.gameMode === 'bvb';
     const piece = state.currentPlayer;
 
+    state.isThinking = true;
+    renderArenaHeaderAndStatus();
+
+    const boardCopy = AI_LIB.cloneBoard(state.board);
     let res;
     if (isBvb && piece === HUMAN) {
-      res = AI_LIB.chooseMove(state.board, {
+      res = await requestBotMove(boardCopy, {
         difficulty: 'Medium',
         aiPiece: HUMAN,
         usePruning: false,
@@ -620,7 +642,7 @@
       });
     } else {
       const cfg = getAiConfig();
-      res = AI_LIB.chooseMove(state.board, {
+      res = await requestBotMove(boardCopy, {
         difficulty: cfg.difficulty,
         aiPiece: piece,
         usePruning: cfg.usePruning,
@@ -628,28 +650,45 @@
       });
     }
 
-    if (res.bestCol !== -1) {
+    if (expectedGen !== state.matchGeneration || state.gameOver) {
+      state.isThinking = false;
+      return;
+    }
+
+    state.isThinking = false;
+    if (res && res.bestCol !== -1) {
       executeDrop(res.bestCol, piece, res);
+    } else {
+      renderArenaHeaderAndStatus();
     }
   }
 
-  function startAutoPlayLoop() {
+  async function startAutoPlayLoop() {
     if (state.gameMode !== 'bvb' || state.gameOver) return;
-    if (state.autoPlayTimer) clearInterval(state.autoPlayTimer);
+    if (state.autoPlayTimer) {
+      clearTimeout(state.autoPlayTimer);
+      state.autoPlayTimer = null;
+    }
+    const gen = state.matchGeneration;
     state.autoPlayPaused = false;
     renderArenaHeaderAndStatus();
 
-    state.autoPlayTimer = setInterval(() => {
-      if (state.gameOver || state.autoPlayPaused) {
-        clearInterval(state.autoPlayTimer);
-        state.autoPlayTimer = null;
-        return;
+    while (!state.gameOver && !state.autoPlayPaused && gen === state.matchGeneration && state.view === 'game') {
+      await runSingleBotStep(gen);
+      if (state.gameOver || state.autoPlayPaused || gen !== state.matchGeneration || state.view !== 'game') {
+        break;
       }
-      runSingleBotStep();
-    }, 520);
+      await new Promise((resolve) => {
+        state.autoPlayTimer = setTimeout(() => {
+          state.autoPlayTimer = null;
+          resolve();
+        }, 420);
+      });
+    }
   }
 
   function resetGame() {
+    state.matchGeneration += 1;
     clearTimers();
     state.board = AI_LIB.createBoard();
     state.currentPlayer = state.firstPlayer;
@@ -684,12 +723,14 @@
   }
 
   function goToMenu() {
+    state.matchGeneration += 1;
     clearTimers();
     switchView('menu');
   }
 
   function undoMove() {
     if (state.history.length === 0 || state.isThinking) return;
+    state.matchGeneration += 1;
     clearTimers();
 
     if (state.gameMode === 'hvb') {
@@ -719,18 +760,21 @@
     } else {
       state.autoPlayPaused = true;
       if (state.autoPlayTimer) {
-        clearInterval(state.autoPlayTimer);
+        clearTimeout(state.autoPlayTimer);
         state.autoPlayTimer = null;
       }
       renderArenaHeaderAndStatus();
     }
   }
 
-  function runPostGameComparison() {
+  async function runPostGameComparison() {
     const target = state.compareTarget;
     if (!target) return;
     const depth = Number(els.compareDepthSelect.value);
-    const comp = AI_LIB.compareAlgorithms(target.board, depth, target.aiPiece);
+    els.compareBtn.disabled = true;
+    els.compareResult.innerHTML = 'Menghitung perbandingan Minimax vs Alpha-Beta...';
+    const comp = await requestCompare(target.board, depth, target.aiPiece);
+    els.compareBtn.disabled = false;
 
     els.compareResult.innerHTML = `
       <table class="compare-table">
@@ -799,13 +843,13 @@
     els.undoBtn.addEventListener('click', undoMove);
 
     els.botStepBtn.addEventListener('click', () => {
-      if (state.gameMode === 'bvb' && !state.gameOver) {
+      if (state.gameMode === 'bvb' && !state.gameOver && !state.isThinking) {
         state.autoPlayPaused = true;
         if (state.autoPlayTimer) {
-          clearInterval(state.autoPlayTimer);
+          clearTimeout(state.autoPlayTimer);
           state.autoPlayTimer = null;
         }
-        runSingleBotStep();
+        runSingleBotStep(state.matchGeneration);
       }
     });
     els.autoPlayBtn.addEventListener('click', toggleAutoPlay);
@@ -834,6 +878,10 @@
         handleHumanMove(Number(e.key));
       }
     });
+  }
+
+  if (els.engineFooterBadge && window.ConnectFourBridge && window.ConnectFourBridge.label) {
+    els.engineFooterBadge.textContent = window.ConnectFourBridge.label;
   }
 
   syncMenuUI();
