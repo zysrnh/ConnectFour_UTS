@@ -25,7 +25,7 @@
     boardMode: 'classic', // 'classic' | 'obstacle'
     boardSize: '6x7', // '6x7' | '7x8' | '7x9'
     userPickedSize: false,
-    difficulty: 'Hard', // 'Easy' | 'Medium' | 'Hard' | 'Custom'
+    difficulty: 'Medium', // 'Easy' | 'Medium' | 'Hard' | 'Custom'
     firstChoice: '1', // '1' | '2' | '3' | '4' | 'random'
     resolvedFirstPlayer: HUMAN,
     randomStartNote: '',
@@ -188,7 +188,58 @@
     compareBtn: document.getElementById('compareBtn'),
     compareContextText: document.getElementById('compareContextText'),
     compareResult: document.getElementById('compareResult'),
+
+    // UI Presentation Helpers (Progressive Disclosure, Tabs, Overflow)
+    advancedSetupDetails: document.getElementById('advancedSetupDetails'),
+    arenaOverflowMenu: document.getElementById('arenaOverflowMenu'),
+    botSpeedSelect: document.getElementById('botSpeedSelect'),
+    analysisTabSteps: document.getElementById('analysisTabSteps'),
+    analysisTabEfficiency: document.getElementById('analysisTabEfficiency'),
+    helpPanelRules: document.getElementById('helpPanelRules'),
+    helpPanelAi: document.getElementById('helpPanelAi'),
   };
+
+  function getBotSpeedFactor() {
+    const mode = els.botSpeedSelect ? els.botSpeedSelect.value : 'normal';
+    if (mode === 'fast') return 0.35;
+    if (mode === 'slow') return 2.2;
+    return 1;
+  }
+
+  function closeOverflowMenu() {
+    if (els.arenaOverflowMenu) {
+      els.arenaOverflowMenu.open = false;
+    }
+  }
+
+  function switchHelpTab(tabName = 'rules') {
+    const isAi = tabName === 'ai';
+    if (els.helpPanelRules) els.helpPanelRules.style.display = isAi ? 'none' : 'flex';
+    if (els.helpPanelAi) els.helpPanelAi.style.display = isAi ? 'flex' : 'none';
+    if (els.rulesModal && els.rulesModal.querySelectorAll) {
+      els.rulesModal.querySelectorAll('[data-help-tab]').forEach((btn) => {
+        const active = btn.dataset.helpTab === tabName;
+        btn.classList.toggle('active', active);
+        if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-selected', String(active));
+      });
+    }
+    if (isAi) {
+      renderScoringLegend(els.modalLegendList, null, null, AI);
+    }
+  }
+
+  function switchAnalysisTab(tabName = 'steps') {
+    const isEff = tabName === 'efficiency';
+    if (els.analysisTabSteps) els.analysisTabSteps.style.display = isEff ? 'none' : 'flex';
+    if (els.analysisTabEfficiency) els.analysisTabEfficiency.style.display = isEff ? 'flex' : 'none';
+    if (els.postGamePanel && els.postGamePanel.querySelectorAll) {
+      els.postGamePanel.querySelectorAll('[data-analysis-tab]').forEach((btn) => {
+        const active = btn.dataset.analysisTab === tabName;
+        btn.classList.toggle('active', active);
+        if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-selected', String(active));
+      });
+    }
+  }
 
   function getAiConfig() {
     const is4P = getPlayerCount() === 4;
@@ -548,8 +599,8 @@
         btn.classList.add('col-best');
       }
       btn.disabled = !humanCanClick || !valid;
-      btn.textContent = `K${c}`;
-      btn.title = `Jatuhkan ke Kolom ${c}`;
+      btn.textContent = String(c);
+      btn.title = `Kolom ${c} (tekan ${c})`;
       btn.addEventListener('mouseenter', () => setHoverCol(c));
       btn.addEventListener('mouseleave', () => setHoverCol(-1));
       btn.addEventListener('click', () => handleHumanMove(c));
@@ -683,7 +734,7 @@
     els.arenaPill.textContent = `${modeTitleMap[state.gameMode]}${obsLabel}`;
 
     els.bvbBar.style.display = isAllBots() && !state.gameOver ? 'flex' : 'none';
-    els.autoPlayBtn.textContent = state.autoPlayPaused ? 'Lanjut Auto-Play' : 'Jeda Auto-Play';
+    els.autoPlayBtn.textContent = state.autoPlayPaused ? 'Lanjut auto-play' : 'Jeda auto-play';
 
     els.turnCounterBadge.textContent = `#${state.moveCount}`;
     els.undoBtn.disabled = state.history.length === 0 || state.isThinking;
@@ -698,7 +749,7 @@
     renderBoardLegend();
 
     const activeMeta = PLAYER_META[state.currentPlayer] || PLAYER_META[1];
-    els.statusBanner.className = 'status-banner';
+    els.statusBanner.className = 'turn-pill';
     els.statusDot.className = 'status-dot';
     els.thinkingDots.classList.remove('active');
 
@@ -706,12 +757,12 @@
       if (state.winner === 'DRAW') {
         els.statusBanner.classList.add('game-draw');
         els.statusDot.classList.add('neutral');
-        els.statusText.textContent = 'Permainan Berakhir SERI (Papan Penuh)';
+        els.statusText.textContent = 'Permainan seri';
       } else {
         const winMeta = PLAYER_META[state.winner] || PLAYER_META[1];
         els.statusBanner.classList.add('game-win');
         els.statusDot.classList.add(winMeta.css);
-        els.statusText.textContent = `${getPlayerLabel(state.winner, false)} MENANG!`;
+        els.statusText.textContent = `${getPlayerLabel(state.winner, true)} menang`;
       }
       return;
     }
@@ -720,17 +771,15 @@
     els.statusDot.classList.add(activeMeta.css);
 
     if (state.isThinking) {
-      els.statusText.textContent = `${getPlayerLabel(state.currentPlayer, true)} sedang berpikir`;
+      els.statusText.textContent = `${getPlayerLabel(state.currentPlayer, true)} berpikir`;
       els.thinkingDots.classList.add('active');
       return;
     }
 
-    const prefix = state.moveCount === 0 && state.randomStartNote ? `${state.randomStartNote} ` : '';
-    const cols = state.board[0].length;
-    if (isBotPlayer(state.currentPlayer)) {
-      els.statusText.textContent = `${prefix}Giliran ${getPlayerLabel(state.currentPlayer, true)}...`;
+    if (state.gameMode === 'hvb' && state.currentPlayer === HUMAN) {
+      els.statusText.textContent = 'Giliran Anda';
     } else {
-      els.statusText.textContent = `${prefix}Giliran ${getPlayerLabel(state.currentPlayer, false)} — Kolom 0–${cols - 1}`;
+      els.statusText.textContent = `Giliran ${getPlayerLabel(state.currentPlayer, true)}`;
     }
   }
 
@@ -886,7 +935,7 @@
         return;
       }
       await runSingleBotStep(gen);
-    }, delayMs);
+    }, Math.round(delayMs * getBotSpeedFactor()));
   }
 
   async function runSingleBotStep(expectedGen = state.matchGeneration) {
@@ -954,7 +1003,7 @@
         state.autoPlayTimer = setTimeout(() => {
           state.autoPlayTimer = null;
           resolve();
-        }, 420);
+        }, Math.round(420 * getBotSpeedFactor()));
       });
     }
   }
@@ -993,8 +1042,10 @@
     if (els.compareDepthSelect) {
       els.compareDepthSelect.value = dims.cols >= 10 ? '3' : '4';
     }
+    switchAnalysisTab('steps');
+    closeOverflowMenu();
     els.compareResult.innerHTML =
-      'Klik <strong>Bandingkan Node</strong> untuk melihat selisih efisiensi Minimax vs Alpha-Beta.';
+      'Tekan tombol di atas untuk membandingkan efisiensi node pencarian.';
 
     renderAll(false);
 
@@ -1014,12 +1065,14 @@
   function goToHome() {
     state.matchGeneration += 1;
     clearTimers();
+    closeOverflowMenu();
     switchView('home');
   }
 
   function goToSetup() {
     state.matchGeneration += 1;
     clearTimers();
+    closeOverflowMenu();
     syncMenuUI();
     switchView('setup');
   }
@@ -1115,6 +1168,9 @@
         state.boardSize = nextMode === '4p' ? '8x10' : '6x7';
       }
       state.gameMode = nextMode;
+      if (els.advancedSetupDetails && nextMode === '4p') {
+        els.advancedSetupDetails.open = true;
+      }
       syncMenuUI();
       pulsePickedCard(btn);
     });
@@ -1202,23 +1258,51 @@
     els.autoPlayBtn.addEventListener('click', toggleAutoPlay);
     els.compareBtn.addEventListener('click', runPostGameComparison);
 
-    els.openRulesBtn.addEventListener('click', () => openModal(els.rulesModal));
+    els.openRulesBtn.addEventListener('click', () => {
+      switchHelpTab('rules');
+      openModal(els.rulesModal);
+    });
     els.closeRulesBtn.addEventListener('click', () => closeModal(els.rulesModal));
     els.rulesModal.addEventListener('click', (e) => {
       if (e.target === els.rulesModal) closeModal(els.rulesModal);
+      const helpTabBtn = e.target.closest ? e.target.closest('[data-help-tab]') : null;
+      if (helpTabBtn) {
+        switchHelpTab(helpTabBtn.dataset.helpTab);
+      }
     });
 
     els.openInfoBtn.addEventListener('click', () => {
-      renderScoringLegend(els.modalLegendList, null, null, AI);
-      openModal(els.infoModal);
+      switchHelpTab('ai');
+      openModal(els.rulesModal);
     });
     els.closeInfoBtn.addEventListener('click', () => closeModal(els.infoModal));
     els.infoModal.addEventListener('click', (e) => {
       if (e.target === els.infoModal) closeModal(els.infoModal);
     });
 
+    if (els.postGamePanel) {
+      els.postGamePanel.addEventListener('click', (e) => {
+        const tabBtn = e.target.closest ? e.target.closest('[data-analysis-tab]') : null;
+        if (tabBtn) {
+          switchAnalysisTab(tabBtn.dataset.analysisTab);
+        }
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (els.arenaOverflowMenu && els.arenaOverflowMenu.open) {
+        if (!els.arenaOverflowMenu.contains || !els.arenaOverflowMenu.contains(e.target)) {
+          closeOverflowMenu();
+        }
+      }
+    });
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (els.arenaOverflowMenu && els.arenaOverflowMenu.open) {
+          closeOverflowMenu();
+          return;
+        }
         if (els.rulesModal.style.display === 'flex') {
           closeModal(els.rulesModal);
           return;
