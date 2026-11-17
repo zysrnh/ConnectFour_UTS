@@ -865,7 +865,7 @@
       els.hoverPreviewRow.classList.toggle('is-idle', !humanCanClick);
     }
 
-    [els.hoverPreviewRow, els.colSelectors, els.boardGrid].forEach((el) => {
+    [els.arenaShell, els.hoverPreviewRow, els.colSelectors, els.boardGrid].forEach((el) => {
       if (!el || !el.style) return;
       el.style.setProperty('--board-cols', String(cols));
       el.style.setProperty('--board-rows', String(rows));

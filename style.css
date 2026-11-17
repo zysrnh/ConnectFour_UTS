@@ -1324,6 +1324,12 @@ button {
   background-color: var(--yellow);
 }
 
+.help-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .help-list {
   margin: 0;
   padding-left: 20px;
@@ -2285,10 +2291,30 @@ button {
 
   .board-column {
     --cell-size: min(
-      calc((100dvh - 445px) / var(--board-rows, 6)),
+      calc((100dvh - 340px) / var(--board-rows, 6)),
       calc((min(90vw, 660px) - 88px) / var(--board-cols, 7)),
       58px
     );
+  }
+}
+
+@media (min-width: 900px) and (max-height: 760px) {
+  .postgame-panel {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .postgame-banner {
+    padding: 10px 12px;
+  }
+
+  .stat-box {
+    padding: 6px 10px;
+  }
+
+  .legend-acc-trigger {
+    min-height: 38px;
+    padding: 6px 10px;
   }
 }
 
@@ -2315,9 +2341,17 @@ button {
     height: 32px;
   }
 
+  .arena-topbar {
+    padding: 6px 14px;
+  }
+
+  .arena-workspace {
+    padding: 8px 16px;
+  }
+
   .board-column {
     --cell-size: min(
-      calc((100dvh - 410px) / var(--board-rows, 6)),
+      calc((100dvh - 305px) / var(--board-rows, 6)),
       calc((min(90vw, 620px) - 88px) / var(--board-cols, 7)),
       52px
     );
@@ -2511,16 +2545,16 @@ button {
 
   .board-column {
     --cell-size: min(
-      calc((100vw - 118px) / var(--board-cols, 7)),
+      calc((100vw - 104px) / var(--board-cols, 7)),
       calc((100dvh - 300px) / var(--board-rows, 6)),
-      44px
+      42px
     );
   }
 
   .board-grid,
   .hover-preview-row,
   .col-selectors {
-    gap: 4px;
+    gap: 3px;
     padding-inline: 8px;
   }
 
