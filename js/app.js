@@ -1153,7 +1153,7 @@
     }
 
     els.arenaShell.classList.add('has-analysis');
-    els.postGamePanel.style.display = 'block';
+    els.postGamePanel.style.display = 'flex';
 
     els.postGameBanner.className = 'postgame-banner';
     if (state.winner === 'DRAW') {
