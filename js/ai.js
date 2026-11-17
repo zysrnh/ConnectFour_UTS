@@ -35,6 +35,7 @@
     '6x7': { rows: 6, cols: 7, label: '6×7' },
     '7x8': { rows: 7, cols: 8, label: '7×8' },
     '7x9': { rows: 7, cols: 9, label: '7×9' },
+    '8x10': { rows: 8, cols: 10, label: '8×10' },
   };
 
   const EVAL_WEIGHTS = {
@@ -125,6 +126,9 @@
       ];
       if (cols >= 8 && candidateCols.length >= 4) {
         spots.push([rows - 1, candidateCols[3]]);
+      }
+      if (cols >= 10 && candidateCols.length >= 4) {
+        spots.push([rows - 2, candidateCols[3]]);
       }
 
       spots.forEach(([r, c]) => {
@@ -613,7 +617,7 @@
       };
     }
 
-    const defaultDepth = playerCount >= 4 && difficulty === 'Hard' ? 4 : preset.maxDepth;
+    const defaultDepth = (playerCount >= 4 || cols >= 10) && difficulty === 'Hard' ? 4 : preset.maxDepth;
     const maxDepth = options.customDepth !== undefined ? options.customDepth : defaultDepth;
     const usePruning = options.usePruning !== undefined ? options.usePruning : preset.usePruning;
 

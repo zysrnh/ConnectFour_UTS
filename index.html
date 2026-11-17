@@ -33,7 +33,7 @@
     </div>
   </header>
 
-  <!-- VIEW 1: MAIN MENU UTAMA (FIT 1 LAYAR) -->
+  <!-- VIEW 1: MAIN MENU UTAMA (PROPORSIONAL DESKTOP & MOBILE) -->
   <main class="view-shell view-centered" id="homeView">
     <section class="home-stage animate-pop-in">
       <div class="card card-hero home-card">
@@ -59,65 +59,84 @@
         </div>
 
         <div class="hero-body home-body">
-          <div class="showcase-wrap" aria-hidden="true">
-            <div class="showcase-board">
-              <div class="sc-cell"></div>
-              <div class="sc-cell"></div>
-              <div class="sc-cell"></div>
-              <div class="sc-cell sc-y sc-win"></div>
-              <div class="sc-cell"></div>
+          <div class="home-split">
+            <div class="showcase-wrap" aria-hidden="true">
+              <div class="showcase-board">
+                <div class="sc-cell"></div>
+                <div class="sc-cell"></div>
+                <div class="sc-cell"></div>
+                <div class="sc-cell sc-y sc-win"></div>
+                <div class="sc-cell"></div>
 
-              <div class="sc-cell"></div>
-              <div class="sc-cell"></div>
-              <div class="sc-cell sc-y sc-win"></div>
-              <div class="sc-cell sc-c"></div>
-              <div class="sc-cell sc-g"></div>
+                <div class="sc-cell"></div>
+                <div class="sc-cell"></div>
+                <div class="sc-cell sc-y sc-win"></div>
+                <div class="sc-cell sc-c"></div>
+                <div class="sc-cell sc-g"></div>
 
-              <div class="sc-cell"></div>
-              <div class="sc-cell sc-y sc-win"></div>
-              <div class="sc-cell sc-c"></div>
-              <div class="sc-cell sc-p"></div>
-              <div class="sc-cell sc-g"></div>
+                <div class="sc-cell"></div>
+                <div class="sc-cell sc-y sc-win"></div>
+                <div class="sc-cell sc-c"></div>
+                <div class="sc-cell sc-p"></div>
+                <div class="sc-cell sc-g"></div>
 
-              <div class="sc-cell sc-y sc-win"></div>
-              <div class="sc-cell sc-c"></div>
-              <div class="sc-cell sc-c"></div>
-              <div class="sc-cell sc-p"></div>
-              <div class="sc-cell sc-y"></div>
+                <div class="sc-cell sc-y sc-win"></div>
+                <div class="sc-cell sc-c"></div>
+                <div class="sc-cell sc-c"></div>
+                <div class="sc-cell sc-p"></div>
+                <div class="sc-cell sc-y"></div>
+              </div>
+              <p class="showcase-tagline">
+                Hubungkan 4 bidak sewarna sebelum lawan menutup jalurmu.
+              </p>
             </div>
-            <p class="showcase-tagline">
-              Hubungkan 4 bidak — Lawan Bot AI, 2 Pemain, atau 4 Player sekaligus!
-            </p>
-          </div>
 
-          <div class="home-menu-buttons">
-            <button type="button" class="btn btn-primary btn-lg home-play-btn" id="goSetupBtn">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <polygon points="6,4 20,12 6,20" />
-              </svg>
-              <span>MAIN</span>
-            </button>
+            <div class="home-action-col">
+              <div class="home-highlights">
+                <div class="hl-item">
+                  <span class="hl-dot p1"></span>
+                  <span>Mode <strong>2P vs AI</strong>, <strong>PvP Lokal</strong>, hingga <strong>4-Player</strong></span>
+                </div>
+                <div class="hl-item">
+                  <span class="hl-dot p2"></span>
+                  <span>Papan adaptif <strong>6×7</strong> sampai <strong>8×10 Jumbo</strong></span>
+                </div>
+                <div class="hl-item">
+                  <span class="hl-dot p3"></span>
+                  <span>Analisis <strong>Minimax vs Alpha-Beta</strong> selesai main</span>
+                </div>
+              </div>
 
-            <div class="home-sub-buttons">
-              <button type="button" class="btn btn-colab" id="openRulesBtn">
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                  <rect x="4" y="4" width="16" height="16" rx="2" />
-                  <line x1="8" y1="9" x2="16" y2="9" />
-                  <line x1="8" y1="13" x2="16" y2="13" />
-                  <line x1="8" y1="17" x2="13" y2="17" />
-                </svg>
-                <span>Alur &amp; Aturan</span>
-              </button>
-              <button type="button" class="btn btn-pink" id="openInfoBtn">
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                  <circle cx="12" cy="5" r="2.5" />
-                  <circle cx="6" cy="18" r="2.5" />
-                  <circle cx="18" cy="18" r="2.5" />
-                  <line x1="11" y1="7.5" x2="7" y2="15.5" />
-                  <line x1="13" y1="7.5" x2="17" y2="15.5" />
-                </svg>
-                <span>Cara Kerja AI</span>
-              </button>
+              <div class="home-menu-buttons">
+                <button type="button" class="btn btn-primary btn-lg home-play-btn" id="goSetupBtn">
+                  <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <polygon points="6,4 20,12 6,20" />
+                  </svg>
+                  <span>MAIN SEKARANG</span>
+                </button>
+
+                <div class="home-sub-buttons">
+                  <button type="button" class="btn btn-colab" id="openRulesBtn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                      <line x1="8" y1="9" x2="16" y2="9" />
+                      <line x1="8" y1="13" x2="16" y2="13" />
+                      <line x1="8" y1="17" x2="13" y2="17" />
+                    </svg>
+                    <span>Alur &amp; Aturan</span>
+                  </button>
+                  <button type="button" class="btn btn-pink" id="openInfoBtn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                      <circle cx="12" cy="5" r="2.5" />
+                      <circle cx="6" cy="18" r="2.5" />
+                      <circle cx="18" cy="18" r="2.5" />
+                      <line x1="11" y1="7.5" x2="7" y2="15.5" />
+                      <line x1="13" y1="7.5" x2="17" y2="15.5" />
+                    </svg>
+                    <span>Cara Kerja AI</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -125,7 +144,7 @@
     </section>
   </main>
 
-  <!-- VIEW 2: MENU SETUP PERTANDINGAN (VISUAL & FIT 1 LAYAR) -->
+  <!-- VIEW 2: MENU SETUP PERTANDINGAN (2-KOLOM DI DESKTOP, BERSIH & PAS 1 LAYAR) -->
   <main class="view-shell view-centered" id="setupView" style="display: none;">
     <section class="setup-stage animate-pop-in">
       <div class="card card-hero setup-card">
@@ -133,246 +152,257 @@
 
         <div class="setup-head">
           <button type="button" class="btn btn-sm" id="backHomeBtn">&larr; Menu</button>
-          <span class="setup-head-title">Atur Pertandingan</span>
-          <span class="badge badge-accent" id="setupPreviewBadge">Hard • 6×7</span>
+          <span class="setup-head-title">Pilih Mode &amp; Arena</span>
+          <span class="badge badge-accent" id="setupPreviewBadge">2P • 6×7</span>
         </div>
 
         <div class="hero-body setup-body">
-          <div class="menu-section">
-            <label class="menu-label">1. Mode Permainan</label>
-            <div class="choice-grid cols-2-always" id="modeChoiceGrid">
-              <button type="button" class="choice-card compact-row-card active" data-mode="hvb">
-                <div class="vc-icon-row">
-                  <span class="mini-disc p1"></span>
-                  <span class="vs-tag">VS</span>
-                  <span class="bot-chip p2">AI</span>
-                </div>
-                <div>
-                  <strong>Manusia vs AI</strong>
-                  <span>Tantang Bot (2P)</span>
-                </div>
-              </button>
+          <div class="setup-columns">
+            <!-- Kolom Kiri Setup: Mode Permainan & Pengaturan 4-Player -->
+            <div class="setup-col">
+              <div class="menu-section">
+                <label class="menu-label">1. Mode Permainan</label>
+                <div class="choice-grid cols-2-always" id="modeChoiceGrid">
+                  <button type="button" class="choice-card compact-row-card active" data-mode="hvb">
+                    <div class="vc-icon-row">
+                      <span class="mini-disc p1"></span>
+                      <span class="vs-tag">VS</span>
+                      <span class="bot-chip p2">AI</span>
+                    </div>
+                    <div class="choice-text">
+                      <strong>Manusia vs AI</strong>
+                      <span>Duel 2P lawan Bot</span>
+                    </div>
+                  </button>
 
-              <button type="button" class="choice-card compact-row-card" data-mode="pvp">
-                <div class="vc-icon-row">
-                  <span class="mini-disc p1"></span>
-                  <span class="vs-tag">VS</span>
-                  <span class="mini-disc p2"></span>
-                </div>
-                <div>
-                  <strong>Pemain vs Pemain</strong>
-                  <span>Duel lokal 2P</span>
-                </div>
-              </button>
+                  <button type="button" class="choice-card compact-row-card" data-mode="pvp">
+                    <div class="vc-icon-row">
+                      <span class="mini-disc p1"></span>
+                      <span class="vs-tag">VS</span>
+                      <span class="mini-disc p2"></span>
+                    </div>
+                    <div class="choice-text">
+                      <strong>Pemain vs Pemain</strong>
+                      <span>Multi lokal 2P</span>
+                    </div>
+                  </button>
 
-              <button type="button" class="choice-card compact-row-card" data-mode="4p">
-                <div class="vc-quad-dots" aria-hidden="true">
-                  <span class="mini-disc p1"></span>
-                  <span class="mini-disc p2"></span>
-                  <span class="mini-disc p3"></span>
-                  <span class="mini-disc p4"></span>
-                </div>
-                <div>
-                  <strong>4-Player Arena</strong>
-                  <span>Multi / Mix Bot</span>
-                </div>
-              </button>
+                  <button type="button" class="choice-card compact-row-card" data-mode="4p">
+                    <div class="vc-quad-dots" aria-hidden="true">
+                      <span class="mini-disc p1"></span>
+                      <span class="mini-disc p2"></span>
+                      <span class="mini-disc p3"></span>
+                      <span class="mini-disc p4"></span>
+                    </div>
+                    <div class="choice-text">
+                      <strong>4-Player Arena</strong>
+                      <span>Multi / Mix Bot</span>
+                    </div>
+                  </button>
 
-              <button type="button" class="choice-card compact-row-card" data-mode="bvb">
-                <div class="vc-icon-row">
-                  <span class="bot-chip p1">AI</span>
-                  <span class="vs-tag">VS</span>
-                  <span class="bot-chip p2">AI</span>
+                  <button type="button" class="choice-card compact-row-card" data-mode="bvb">
+                    <div class="vc-icon-row">
+                      <span class="bot-chip p1">AI</span>
+                      <span class="vs-tag">VS</span>
+                      <span class="bot-chip p2">AI</span>
+                    </div>
+                    <div class="choice-text">
+                      <strong>Bot vs Bot</strong>
+                      <span>Simulasi 2 agen AI</span>
+                    </div>
+                  </button>
                 </div>
-                <div>
-                  <strong>Bot vs Bot</strong>
-                  <span>Duel 2 agen AI</span>
-                </div>
-              </button>
-            </div>
-          </div>
+              </div>
 
-          <!-- Konfigurasi Khusus 4-Player -->
-          <div class="menu-section custom-box four-player-box" id="fourPlayerBox" style="display: none;">
-            <div class="four-head-row">
-              <span class="menu-label" style="margin-bottom: 0;">Susunan Pemain (Klik untuk Ganti)</span>
-              <div class="preset-chips" id="fourPresetGrid">
-                <button type="button" class="preset-chip" data-preset="4human">4 Manusia</button>
-                <button type="button" class="preset-chip active" data-preset="1h3b">1P + 3 Bot</button>
-                <button type="button" class="preset-chip" data-preset="2h2b">2P + 2 Bot</button>
-                <button type="button" class="preset-chip" data-preset="4bot">4 Bot</button>
+              <!-- Konfigurasi Khusus 4-Player -->
+              <div class="menu-section custom-box four-player-box" id="fourPlayerBox" style="display: none;">
+                <div class="four-head-row">
+                  <span class="menu-label" style="margin-bottom: 0;">Susunan 4-Player</span>
+                  <div class="preset-chips" id="fourPresetGrid">
+                    <button type="button" class="preset-chip" data-preset="4human">4 Manusia</button>
+                    <button type="button" class="preset-chip active" data-preset="1h3b">1P + 3 Bot</button>
+                    <button type="button" class="preset-chip" data-preset="2h2b">2P + 2 Bot</button>
+                    <button type="button" class="preset-chip" data-preset="4bot">4 Bot</button>
+                  </div>
+                </div>
+                <div class="four-seats-grid" id="fourSeatsGrid">
+                  <button type="button" class="seat-btn" data-seat="1">
+                    <span class="mini-disc p1"></span>
+                    <span class="seat-label">P1 • Coral</span>
+                    <span class="seat-role-tag" data-role-for="1">Manusia</span>
+                  </button>
+                  <button type="button" class="seat-btn" data-seat="2">
+                    <span class="mini-disc p2"></span>
+                    <span class="seat-label">P2 • Kuning</span>
+                    <span class="seat-role-tag is-bot" data-role-for="2">Bot</span>
+                  </button>
+                  <button type="button" class="seat-btn" data-seat="3">
+                    <span class="mini-disc p3"></span>
+                    <span class="seat-label">P3 • Hijau</span>
+                    <span class="seat-role-tag is-bot" data-role-for="3">Bot</span>
+                  </button>
+                  <button type="button" class="seat-btn" data-seat="4">
+                    <span class="mini-disc p4"></span>
+                    <span class="seat-label">P4 • Ungu</span>
+                    <span class="seat-role-tag is-bot" data-role-for="4">Bot</span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="four-seats-grid" id="fourSeatsGrid">
-              <button type="button" class="seat-btn" data-seat="1">
-                <span class="mini-disc p1"></span>
-                <span class="seat-label">P1 • Coral</span>
-                <span class="seat-role-tag" data-role-for="1">Manusia</span>
-              </button>
-              <button type="button" class="seat-btn" data-seat="2">
-                <span class="mini-disc p2"></span>
-                <span class="seat-label">P2 • Kuning</span>
-                <span class="seat-role-tag is-bot" data-role-for="2">Bot</span>
-              </button>
-              <button type="button" class="seat-btn" data-seat="3">
-                <span class="mini-disc p3"></span>
-                <span class="seat-label">P3 • Hijau</span>
-                <span class="seat-role-tag is-bot" data-role-for="3">Bot</span>
-              </button>
-              <button type="button" class="seat-btn" data-seat="4">
-                <span class="mini-disc p4"></span>
-                <span class="seat-label">P4 • Ungu</span>
-                <span class="seat-role-tag is-bot" data-role-for="4">Bot</span>
-              </button>
-            </div>
-          </div>
 
-          <div class="menu-section">
-            <label class="menu-label">2. Papan &amp; Ukuran</label>
-            <div class="choice-grid cols-2-always" id="boardModeGrid">
-              <button type="button" class="choice-card compact-row-card active" data-bmode="classic">
-                <span class="tile-badge blue">4×</span>
-                <div>
-                  <strong>Klasik</strong>
-                  <span>Papan standar murni</span>
+            <!-- Kolom Kanan Setup: Papan, Ukuran & Kesulitan AI -->
+            <div class="setup-col">
+              <div class="menu-section">
+                <label class="menu-label">2. Tipe &amp; Ukuran Papan</label>
+                <div class="choice-grid cols-2-always" id="boardModeGrid">
+                  <button type="button" class="choice-card compact-row-card active" data-bmode="classic">
+                    <span class="tile-badge blue">4×</span>
+                    <div class="choice-text">
+                      <strong>Klasik</strong>
+                      <span>Papan murni</span>
+                    </div>
+                  </button>
+                  <button type="button" class="choice-card compact-row-card" data-bmode="obstacle">
+                    <span class="tile-badge stone">&#x2715;</span>
+                    <div class="choice-text">
+                      <strong>Obstacle</strong>
+                      <span>Batu rintangan</span>
+                    </div>
+                  </button>
                 </div>
-              </button>
-              <button type="button" class="choice-card compact-row-card" data-bmode="obstacle">
-                <span class="tile-badge stone">&#x2715;</span>
-                <div>
-                  <strong>Obstacle</strong>
-                  <span>Batu rintangan acak</span>
-                </div>
-              </button>
-            </div>
 
-            <div class="board-size-bar">
-              <span class="size-label">Ukuran Grid:</span>
-              <div class="size-toggle" id="boardSizeGrid" role="group" aria-label="Ukuran Papan">
-                <button type="button" class="size-btn active" data-size="6x7">6×7 Standar</button>
-                <button type="button" class="size-btn" data-size="7x8">7×8 Luas</button>
-                <button type="button" class="size-btn" data-size="7x9">7×9 Ekstra</button>
+                <div class="board-size-bar">
+                  <span class="size-label">Ukuran Papan:</span>
+                  <div class="size-toggle" id="boardSizeGrid" role="group" aria-label="Ukuran Papan">
+                    <button type="button" class="size-btn active" data-size="6x7" title="42 petak (Standar 2P)">6×7</button>
+                    <button type="button" class="size-btn" data-size="7x8" title="56 petak (Luas)">7×8</button>
+                    <button type="button" class="size-btn" data-size="7x9" title="63 petak (Ekstra)">7×9</button>
+                    <button type="button" class="size-btn" data-size="8x10" title="80 petak (Jumbo 4P)">8×10</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="menu-section" id="diffSection">
+                <label class="menu-label">3. Tingkat Kesulitan AI</label>
+                <div class="choice-grid cols-2-always" id="diffChoiceGrid">
+                  <button type="button" class="choice-card diff-card" data-diff="Easy">
+                    <div class="diff-top">
+                      <strong>Easy</strong>
+                      <span class="power-bars" aria-hidden="true">
+                        <i class="bar on green"></i><i class="bar"></i><i class="bar"></i>
+                      </span>
+                    </div>
+                    <span>Langkah acak</span>
+                  </button>
+                  <button type="button" class="choice-card diff-card" data-diff="Medium">
+                    <div class="diff-top">
+                      <strong>Medium</strong>
+                      <span class="power-bars" aria-hidden="true">
+                        <i class="bar on yellow"></i><i class="bar on yellow"></i><i class="bar"></i>
+                      </span>
+                    </div>
+                    <span>Minimax Depth 3</span>
+                  </button>
+                  <button type="button" class="choice-card diff-card active" data-diff="Hard">
+                    <div class="diff-top">
+                      <strong>Hard</strong>
+                      <span class="power-bars" aria-hidden="true">
+                        <i class="bar on coral"></i><i class="bar on coral"></i><i class="bar on coral"></i>
+                      </span>
+                    </div>
+                    <span>Alpha-Beta</span>
+                  </button>
+                  <button type="button" class="choice-card diff-card" data-diff="Custom">
+                    <div class="diff-top">
+                      <strong>Custom</strong>
+                      <span class="custom-chip">SET</span>
+                    </div>
+                    <span>Atur algo &amp; depth</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="menu-section custom-box" id="customConfigBox" style="display: none;">
+                <div class="controls-grid cols-2-always">
+                  <div class="control-group">
+                    <label for="algorithmSelect">Algoritma</label>
+                    <select id="algorithmSelect">
+                      <option value="alphabeta" selected>Alpha-Beta</option>
+                      <option value="minimax">Minimax Murni</option>
+                    </select>
+                  </div>
+                  <div class="control-group">
+                    <label for="depthSelect">Max Depth</label>
+                    <select id="depthSelect">
+                      <option value="1">Depth 1</option>
+                      <option value="2">Depth 2</option>
+                      <option value="3">Depth 3</option>
+                      <option value="4">Depth 4</option>
+                      <option value="5" selected>Depth 5</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="menu-section" id="diffSection">
-            <label class="menu-label">3. Tingkat Kesulitan AI</label>
-            <div class="choice-grid cols-2-always" id="diffChoiceGrid">
-              <button type="button" class="choice-card diff-card" data-diff="Easy">
-                <div class="diff-top">
-                  <strong>Easy</strong>
-                  <span class="power-bars" aria-hidden="true">
-                    <i class="bar on green"></i><i class="bar"></i><i class="bar"></i>
-                  </span>
-                </div>
-                <span>Langkah acak</span>
-              </button>
-              <button type="button" class="choice-card diff-card" data-diff="Medium">
-                <div class="diff-top">
-                  <strong>Medium</strong>
-                  <span class="power-bars" aria-hidden="true">
-                    <i class="bar on yellow"></i><i class="bar on yellow"></i><i class="bar"></i>
-                  </span>
-                </div>
-                <span>Minimax Depth 3</span>
-              </button>
-              <button type="button" class="choice-card diff-card active" data-diff="Hard">
-                <div class="diff-top">
-                  <strong>Hard</strong>
-                  <span class="power-bars" aria-hidden="true">
-                    <i class="bar on coral"></i><i class="bar on coral"></i><i class="bar on coral"></i>
-                  </span>
-                </div>
-                <span>Alpha-Beta Pruning</span>
-              </button>
-              <button type="button" class="choice-card diff-card" data-diff="Custom">
-                <div class="diff-top">
-                  <strong>Custom</strong>
-                  <span class="custom-chip">SET</span>
-                </div>
-                <span>Atur algo &amp; depth</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="menu-section custom-box" id="customConfigBox" style="display: none;">
-            <div class="controls-grid cols-2-always">
-              <div class="control-group">
-                <label for="algorithmSelect">Algoritma</label>
-                <select id="algorithmSelect">
-                  <option value="alphabeta" selected>Alpha-Beta</option>
-                  <option value="minimax">Minimax Murni</option>
-                </select>
-              </div>
-              <div class="control-group">
-                <label for="depthSelect">Max Depth</label>
-                <select id="depthSelect">
-                  <option value="1">Depth 1</option>
-                  <option value="2">Depth 2</option>
-                  <option value="3">Depth 3</option>
-                  <option value="4">Depth 4</option>
-                  <option value="5" selected>Depth 5</option>
-                </select>
+          <div class="setup-footer-block">
+            <div class="menu-section" style="margin-bottom: 10px;">
+              <label class="menu-label" id="firstSectionLabel">4. Jalan Pertama</label>
+              <div class="choice-grid cols-3-always" id="firstChoiceGrid">
+                <button type="button" class="choice-card first-card active" data-first="1">
+                  <span class="first-disc p1">1</span>
+                  <div class="choice-text">
+                    <strong id="firstP1Title">Manusia</strong>
+                    <span id="firstP1Sub">Coral</span>
+                  </div>
+                </button>
+                <button type="button" class="choice-card first-card" data-first="2">
+                  <span class="first-disc p2">2</span>
+                  <div class="choice-text">
+                    <strong id="firstP2Title">Bot AI</strong>
+                    <span id="firstP2Sub">Kuning</span>
+                  </div>
+                </button>
+                <button type="button" class="choice-card first-card" data-first="3" style="display: none;">
+                  <span class="first-disc p3">3</span>
+                  <div class="choice-text">
+                    <strong id="firstP3Title">Bot 3</strong>
+                    <span>Hijau</span>
+                  </div>
+                </button>
+                <button type="button" class="choice-card first-card" data-first="4" style="display: none;">
+                  <span class="first-disc p4">4</span>
+                  <div class="choice-text">
+                    <strong id="firstP4Title">Bot 4</strong>
+                    <span>Ungu</span>
+                  </div>
+                </button>
+                <button type="button" class="choice-card first-card" data-first="random">
+                  <span class="first-disc random">?</span>
+                  <div class="choice-text">
+                    <strong>Acak</strong>
+                    <span id="firstRandomSub">Undi 50:50</span>
+                  </div>
+                </button>
               </div>
             </div>
-          </div>
 
-          <div class="menu-section">
-            <label class="menu-label" id="firstSectionLabel">4. Jalan Pertama</label>
-            <div class="choice-grid cols-3-always" id="firstChoiceGrid">
-              <button type="button" class="choice-card first-card active" data-first="1">
-                <span class="first-disc p1">1</span>
-                <div>
-                  <strong id="firstP1Title">Manusia</strong>
-                  <span id="firstP1Sub">Coral</span>
-                </div>
-              </button>
-              <button type="button" class="choice-card first-card" data-first="2">
-                <span class="first-disc p2">2</span>
-                <div>
-                  <strong id="firstP2Title">Bot AI</strong>
-                  <span id="firstP2Sub">Kuning</span>
-                </div>
-              </button>
-              <button type="button" class="choice-card first-card" data-first="3" style="display: none;">
-                <span class="first-disc p3">3</span>
-                <div>
-                  <strong id="firstP3Title">Bot 3</strong>
-                  <span>Hijau</span>
-                </div>
-              </button>
-              <button type="button" class="choice-card first-card" data-first="4" style="display: none;">
-                <span class="first-disc p4">4</span>
-                <div>
-                  <strong id="firstP4Title">Bot 4</strong>
-                  <span>Ungu</span>
-                </div>
-              </button>
-              <button type="button" class="choice-card first-card" data-first="random">
-                <span class="first-disc random">?</span>
-                <div>
-                  <strong>Acak</strong>
-                  <span id="firstRandomSub">Undi 50:50</span>
-                </div>
+            <div class="setup-actions">
+              <button type="button" class="btn btn-primary btn-lg" id="startGameBtn">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="6,4 20,12 6,20" />
+                </svg>
+                <span>MULAI PERTANDINGAN</span>
               </button>
             </div>
-          </div>
-
-          <div class="setup-actions">
-            <button type="button" class="btn btn-primary btn-lg" id="startGameBtn">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <polygon points="6,4 20,12 6,20" />
-              </svg>
-              <span>MULAI PERTANDINGAN</span>
-            </button>
           </div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- VIEW 3 & 4: ARENA BERSIH -> MUNCUL ANALISIS SETELAH SELESAI -->
+  <!-- VIEW 3 & 4: ARENA BERSIH (MELEBAR OTOMATIS SAAT 4-PLAYER / PAPAN BESAR) -->
   <main class="view-shell" id="gameView" style="display: none;">
     <div class="arena-shell" id="arenaShell">
       <section class="arena-column">
@@ -403,7 +433,7 @@
             <div class="status-banner turn-p1" id="statusBanner" role="status" aria-live="polite">
               <div class="status-left">
                 <span class="status-dot p1" id="statusDot"></span>
-                <span id="statusText">Giliran Anda — Pilih Kolom 0–6</span>
+                <span id="statusText">Giliran Anda — Kolom 0–6</span>
                 <span class="thinking-dots" id="thinkingDots" aria-hidden="true">
                   <span></span><span></span><span></span>
                 </span>
@@ -519,11 +549,11 @@
         </div>
         <div class="flow-step">
           <span class="flow-num">2</span>
-          <div><strong>Atur Papan:</strong> Pilih papan <em>Klasik</em> atau <em>Obstacle</em> (batu rintangan) dengan ukuran <em>6×7</em>, <em>7×8</em>, atau <em>7×9</em>.</div>
+          <div><strong>Papan Adaptif:</strong> Pilih papan <em>Klasik</em> atau <em>Obstacle</em>. Ukuran otomatis menyesuaikan jumlah pemain: <em>6×7</em> standar hingga <em>8×10 Jumbo</em> (80 petak) untuk 4-Player.</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">3</span>
-          <div><strong>Mainkan Giliran:</strong> Klik tombol kolom <code>K0–K8</code> (atau ketik angka keyboard) — siapa yang lebih dulu menghubungkan <strong>4 bidak sewarna</strong> (horizontal, vertikal, atau diagonal) langsung menang!</div>
+          <div><strong>Mainkan Giliran:</strong> Klik tombol kolom <code>K0–K9</code> (atau ketik angka <code>0–9</code>) — siapa yang lebih dulu menghubungkan <strong>4 bidak sewarna</strong> (horizontal, vertikal, atau diagonal) langsung menang!</div>
         </div>
         <div class="flow-step">
           <span class="flow-num">4</span>

@@ -344,12 +344,11 @@
       '4p': '4-Player',
       bvb: 'Bot Duel',
     };
+    const sizeInfo = (AI_LIB.BOARD_SIZES && AI_LIB.BOARD_SIZES[state.boardSize]) || { label: state.boardSize };
     const obsTag = state.boardMode === 'obstacle' ? ' • Batu' : '';
     const cfg = getAiConfig();
-    const diffTag = botsPresent ? ` • ${cfg.label}` : '';
-    const badgeText = `${modeTagMap[state.gameMode]}${diffTag}${obsTag} • ${state.boardSize}`;
-    els.setupPreviewBadge.textContent = badgeText;
-    els.activeConfigBadge.textContent = badgeText;
+    els.setupPreviewBadge.textContent = `${modeTagMap[state.gameMode]} • ${sizeInfo.label}${obsTag}`;
+    els.activeConfigBadge.textContent = `${modeTagMap[state.gameMode]}${botsPresent ? ` • ${cfg.label}` : ''} • ${sizeInfo.label}${obsTag}`;
   }
 
   function clearTimers() {
@@ -508,6 +507,10 @@
     const rows = state.board.length;
     const cols = state.board[0].length;
     const activeCss = (PLAYER_META[state.currentPlayer] || PLAYER_META[1]).css;
+
+    if (els.arenaShell && els.arenaShell.classList) {
+      els.arenaShell.classList.toggle('is-wide-arena', getPlayerCount() >= 4 || cols >= 8);
+    }
 
     [els.hoverPreviewRow, els.colSelectors, els.boardGrid].forEach((el) => {
       if (!el || !el.style) return;
@@ -980,6 +983,9 @@
     state.hoverCol = -1;
     state.autoPlayPaused = false;
 
+    if (els.compareDepthSelect) {
+      els.compareDepthSelect.value = dims.cols >= 10 ? '3' : '4';
+    }
     els.compareResult.innerHTML =
       'Klik <strong>Bandingkan Node</strong> untuk melihat selisih efisiensi Minimax vs Alpha-Beta.';
 
@@ -1099,7 +1105,7 @@
       if (!btn) return;
       const nextMode = btn.dataset.mode;
       if (!state.userPickedSize) {
-        state.boardSize = nextMode === '4p' ? '7x9' : '6x7';
+        state.boardSize = nextMode === '4p' ? '8x10' : '6x7';
       }
       state.gameMode = nextMode;
       syncMenuUI();
