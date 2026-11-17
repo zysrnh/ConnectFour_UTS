@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Connect-Four AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -288,27 +291,33 @@
                   <button type="button" class="choice-card diff-card" data-diff="Easy">
                     <div class="diff-top">
                       <strong>Easy</strong>
-                      <span class="power-bars" aria-hidden="true">
-                        <i class="bar on green"></i><i class="bar"></i><i class="bar"></i>
-                      </span>
+                      <svg class="level-bars" viewBox="0 0 24 18" aria-hidden="true">
+                        <rect class="bar-on bar-green" x="1" y="10" width="5" height="7" rx="1" />
+                        <rect class="bar-off" x="9" y="6" width="5" height="11" rx="1" />
+                        <rect class="bar-off" x="17" y="2" width="5" height="15" rx="1" />
+                      </svg>
                     </div>
                     <span>Langkah acak</span>
                   </button>
                   <button type="button" class="choice-card diff-card" data-diff="Medium">
                     <div class="diff-top">
                       <strong>Medium</strong>
-                      <span class="power-bars" aria-hidden="true">
-                        <i class="bar on yellow"></i><i class="bar on yellow"></i><i class="bar"></i>
-                      </span>
+                      <svg class="level-bars" viewBox="0 0 24 18" aria-hidden="true">
+                        <rect class="bar-on bar-yellow" x="1" y="10" width="5" height="7" rx="1" />
+                        <rect class="bar-on bar-yellow" x="9" y="6" width="5" height="11" rx="1" />
+                        <rect class="bar-off" x="17" y="2" width="5" height="15" rx="1" />
+                      </svg>
                     </div>
                     <span>Minimax Depth 3</span>
                   </button>
                   <button type="button" class="choice-card diff-card active" data-diff="Hard">
                     <div class="diff-top">
                       <strong>Hard</strong>
-                      <span class="power-bars" aria-hidden="true">
-                        <i class="bar on coral"></i><i class="bar on coral"></i><i class="bar on coral"></i>
-                      </span>
+                      <svg class="level-bars" viewBox="0 0 24 18" aria-hidden="true">
+                        <rect class="bar-on bar-coral" x="1" y="10" width="5" height="7" rx="1" />
+                        <rect class="bar-on bar-coral" x="9" y="6" width="5" height="11" rx="1" />
+                        <rect class="bar-on bar-coral" x="17" y="2" width="5" height="15" rx="1" />
+                      </svg>
                     </div>
                     <span>Alpha-Beta</span>
                   </button>

@@ -339,16 +339,20 @@
     }
 
     const modeTagMap = {
-      hvb: '2P vs AI',
+      hvb: '2P AI',
       pvp: 'PvP 2P',
-      '4p': '4-Player',
+      '4p': '4P',
       bvb: 'Bot Duel',
     };
     const sizeInfo = (AI_LIB.BOARD_SIZES && AI_LIB.BOARD_SIZES[state.boardSize]) || { label: state.boardSize };
     const obsTag = state.boardMode === 'obstacle' ? ' • Batu' : '';
     const cfg = getAiConfig();
+    const diffShort =
+      cfg.difficulty === 'Custom'
+        ? `Custom d=${cfg.maxDepth}`
+        : cfg.difficulty;
     els.setupPreviewBadge.textContent = `${modeTagMap[state.gameMode]} • ${sizeInfo.label}${obsTag}`;
-    els.activeConfigBadge.textContent = `${modeTagMap[state.gameMode]}${botsPresent ? ` • ${cfg.label}` : ''} • ${sizeInfo.label}${obsTag}`;
+    els.activeConfigBadge.textContent = `${modeTagMap[state.gameMode]}${botsPresent ? ` • ${diffShort}` : ''} • ${sizeInfo.label}${obsTag}`;
   }
 
   function clearTimers() {
@@ -510,6 +514,9 @@
 
     if (els.arenaShell && els.arenaShell.classList) {
       els.arenaShell.classList.toggle('is-wide-arena', getPlayerCount() >= 4 || cols >= 8);
+    }
+    if (els.hoverPreviewRow && els.hoverPreviewRow.classList) {
+      els.hoverPreviewRow.classList.toggle('is-idle', !humanCanClick);
     }
 
     [els.hoverPreviewRow, els.colSelectors, els.boardGrid].forEach((el) => {
