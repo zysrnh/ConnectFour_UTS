@@ -189,7 +189,14 @@
     compareContextText: document.getElementById('compareContextText'),
     compareResult: document.getElementById('compareResult'),
 
-    // UI Presentation Helpers (Progressive Disclosure, Tabs, Overflow)
+    // UI Presentation Helpers (Lobby Preview, Drawer, Effects, Tabs, Overflow)
+    lobbyPreviewBoard: document.getElementById('lobbyPreviewBoard'),
+    lobbyPreviewLabel: document.getElementById('lobbyPreviewLabel'),
+    lobbyPreviewChips: document.getElementById('lobbyPreviewChips'),
+    openAdvancedBtn: document.getElementById('openAdvancedBtn'),
+    closeAdvancedBtn: document.getElementById('closeAdvancedBtn'),
+    applyAdvancedBtn: document.getElementById('applyAdvancedBtn'),
+    advancedSummaryBadge: document.getElementById('advancedSummaryBadge'),
     advancedSetupDetails: document.getElementById('advancedSetupDetails'),
     arenaOverflowMenu: document.getElementById('arenaOverflowMenu'),
     botSpeedSelect: document.getElementById('botSpeedSelect'),
@@ -197,7 +204,132 @@
     analysisTabEfficiency: document.getElementById('analysisTabEfficiency'),
     helpPanelRules: document.getElementById('helpPanelRules'),
     helpPanelAi: document.getElementById('helpPanelAi'),
+    winLineSvg: document.getElementById('winLineSvg'),
+    confettiCanvas: document.getElementById('confettiCanvas'),
+    soundToggleBtn: document.getElementById('soundToggleBtn'),
   };
+
+  // =========================================================================
+  // GAME-FEEL PRESENTATION HELPERS (SFX, PREVIEW, DRAWER, TRANSITIONS, VFX)
+  // =========================================================================
+
+  const SFX_STORAGE_KEY = 'connect4_sfx_enabled';
+  let sfxEnabled = false;
+  let audioCtx = null;
+  let lastTurnSignature = '';
+  let viewLeaveTimer = null;
+  let activeConfettiRaf = null;
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      sfxEnabled = window.localStorage.getItem(SFX_STORAGE_KEY) === 'true';
+    }
+  } catch (_) {
+    sfxEnabled = false;
+  }
+
+  function prefersReducedMotion() {
+    try {
+      return Boolean(
+        typeof window !== 'undefined'
+        && window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function syncSoundToggleUI() {
+    if (!els.soundToggleBtn) return;
+    if (els.soundToggleBtn.classList) {
+      els.soundToggleBtn.classList.toggle('is-active', sfxEnabled);
+    }
+    if (typeof els.soundToggleBtn.setAttribute === 'function') {
+      els.soundToggleBtn.setAttribute('aria-pressed', String(sfxEnabled));
+      els.soundToggleBtn.setAttribute(
+        'aria-label',
+        sfxEnabled ? 'Matikan suara efek game' : 'Aktifkan suara efek game'
+      );
+    }
+    els.soundToggleBtn.title = sfxEnabled ? 'Suara efek: Nyala' : 'Suara efek: Mati';
+  }
+
+  function toggleSoundEnabled() {
+    sfxEnabled = !sfxEnabled;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(SFX_STORAGE_KEY, String(sfxEnabled));
+      }
+    } catch (_) {}
+    syncSoundToggleUI();
+    if (sfxEnabled) playSfx('click');
+  }
+
+  function ensureAudioContext() {
+    if (audioCtx) return audioCtx;
+    if (typeof window === 'undefined') return null;
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    try {
+      audioCtx = new Ctor();
+    } catch (_) {
+      return null;
+    }
+    return audioCtx;
+  }
+
+  function playSfx(kind) {
+    if (!sfxEnabled) return;
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+        ctx.resume();
+      }
+      const now = ctx.currentTime;
+      if (kind === 'click') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(620, now);
+        osc.frequency.exponentialRampToValueAtTime(340, now + 0.045);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.055);
+      } else if (kind === 'drop') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(125, now + 0.11);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      } else if (kind === 'win') {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const t0 = now + idx * 0.075;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t0);
+          gain.gain.setValueAtTime(0.08, t0);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.19);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t0);
+          osc.stop(t0 + 0.2);
+        });
+      }
+    } catch (_) {}
+  }
 
   function getBotSpeedFactor() {
     const mode = els.botSpeedSelect ? els.botSpeedSelect.value : 'normal';
@@ -367,7 +499,7 @@
     });
 
     if (els.firstSectionLabel) {
-      els.firstSectionLabel.textContent = botsPresent ? '4. Jalan Pertama' : '3. Jalan Pertama';
+      els.firstSectionLabel.textContent = 'Jalan pertama';
     }
 
     if (state.gameMode === 'hvb') {
@@ -404,6 +536,128 @@
         : cfg.difficulty;
     els.setupPreviewBadge.textContent = `${modeTagMap[state.gameMode]} • ${sizeInfo.label}${obsTag}`;
     els.activeConfigBadge.textContent = `${modeTagMap[state.gameMode]}${botsPresent ? ` • ${diffShort}` : ''} • ${sizeInfo.label}${obsTag}`;
+
+    syncAdvancedSummary(botsPresent, is4P, cfg);
+    renderLobbyPreview();
+  }
+
+  function syncAdvancedSummary(botsPresent, is4P, cfg) {
+    if (!els.advancedSummaryBadge) return;
+    const firstMap = {
+      '1': is4P ? 'P1' : (state.gameMode === 'hvb' ? 'Manusia' : 'P1'),
+      '2': is4P ? 'P2' : (state.gameMode === 'hvb' ? 'Bot AI' : 'P2'),
+      '3': 'P3',
+      '4': 'P4',
+      random: 'Acak',
+    };
+    const parts = [];
+    if (is4P) {
+      let humanCount = 0;
+      for (let s = 1; s <= 4; s++) {
+        if (state.fourSeats[s] === 'human') humanCount += 1;
+      }
+      parts.push(`${humanCount}P+${4 - humanCount}B`);
+    }
+    if (botsPresent && cfg && cfg.difficulty === 'Custom') {
+      parts.push(`${cfg.algorithm === 'minimax' ? 'MM' : 'AB'} d=${cfg.maxDepth}`);
+    }
+    parts.push(`Jalan: ${firstMap[state.firstChoice] || 'P1'}`);
+    els.advancedSummaryBadge.textContent = parts.join(' • ');
+  }
+
+  function renderLobbyPreview() {
+    if (!els.lobbyPreviewBoard) return;
+    const sizeInfo = (AI_LIB.BOARD_SIZES && AI_LIB.BOARD_SIZES[state.boardSize]) || { rows: 6, cols: 7, label: '6×7' };
+    const rows = sizeInfo.rows;
+    const cols = sizeInfo.cols;
+    const isObs = state.boardMode === 'obstacle';
+    const pCount = getPlayerCount();
+
+    if (els.lobbyPreviewLabel) {
+      els.lobbyPreviewLabel.textContent = `${isObs ? 'Obstacle' : 'Klasik'} • ${sizeInfo.label}`;
+    }
+
+    if (els.lobbyPreviewChips) {
+      els.lobbyPreviewChips.innerHTML = '';
+      for (let p = 1; p <= pCount; p++) {
+        const meta = PLAYER_META[p];
+        const chip = document.createElement('span');
+        chip.className = 'pv-chip';
+        chip.innerHTML = `<span class="pv-dot ${meta.css}"></span><span>P${p}</span>`;
+        els.lobbyPreviewChips.appendChild(chip);
+      }
+      if (isObs) {
+        const obsChip = document.createElement('span');
+        obsChip.className = 'pv-chip';
+        obsChip.innerHTML = `<span class="pv-dot obs"></span><span>Batu</span>`;
+        els.lobbyPreviewChips.appendChild(obsChip);
+      }
+    }
+
+    if (els.lobbyPreviewBoard.style) {
+      els.lobbyPreviewBoard.style.setProperty('--p-rows', String(rows));
+      els.lobbyPreviewBoard.style.setProperty('--p-cols', String(cols));
+    }
+
+    const previewMap = new Map();
+    if (isObs) {
+      const stones = [
+        [rows - 2, 1],
+        [rows - 2, cols - 2],
+        [Math.floor(rows / 2), Math.floor(cols / 2)],
+        [Math.floor(rows / 2) - 1, Math.floor(cols / 2) - 1],
+      ];
+      stones.forEach(([sr, sc]) => {
+        if (sr >= 0 && sr < rows && sc >= 0 && sc < cols) {
+          previewMap.set(`${sr},${sc}`, 'is-stone');
+        }
+      });
+    }
+
+    const sampleDiscs = pCount === 4
+      ? [
+          [rows - 1, 0, 'p1'],
+          [rows - 1, 2, 'p2'],
+          [rows - 1, 4, 'p3'],
+          [rows - 1, cols - 1, 'p4'],
+          [rows - 2, 2, 'p1'],
+          [rows - 2, 4, 'p2'],
+        ]
+      : [
+          [rows - 1, Math.floor(cols / 2) - 1, 'p1'],
+          [rows - 1, Math.floor(cols / 2), 'p2'],
+          [rows - 1, Math.floor(cols / 2) + 1, 'p1'],
+          [rows - 2, Math.floor(cols / 2), 'p1'],
+          [rows - 2, Math.floor(cols / 2) - 1, 'p2'],
+        ];
+    sampleDiscs.forEach(([dr, dc, cls]) => {
+      const key = `${dr},${dc}`;
+      if (dr >= 0 && dr < rows && dc >= 0 && dc < cols && !previewMap.has(key)) {
+        previewMap.set(key, cls);
+      }
+    });
+
+    els.lobbyPreviewBoard.innerHTML = '';
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement('div');
+        const extra = previewMap.get(`${r},${c}`) || '';
+        cell.className = extra ? `p-cell ${extra}` : 'p-cell';
+        els.lobbyPreviewBoard.appendChild(cell);
+      }
+    }
+  }
+
+  function openAdvancedDrawer() {
+    if (!els.advancedSetupDetails) return;
+    openModal(els.advancedSetupDetails);
+    els.advancedSetupDetails.open = true;
+  }
+
+  function closeAdvancedDrawer() {
+    if (!els.advancedSetupDetails) return;
+    els.advancedSetupDetails.open = false;
+    closeModal(els.advancedSetupDetails);
   }
 
   function clearTimers() {
@@ -433,10 +687,51 @@
   }
 
   function switchView(viewName) {
+    const prevName = state.view;
+    const viewMap = {
+      home: els.homeView,
+      setup: els.setupView,
+      game: els.gameView,
+    };
+    const nextEl = viewMap[viewName];
+    const prevEl = viewMap[prevName];
+
+    if (viewLeaveTimer) {
+      clearTimeout(viewLeaveTimer);
+      viewLeaveTimer = null;
+    }
+
     state.view = viewName;
-    els.homeView.style.display = viewName === 'home' ? 'flex' : 'none';
-    els.setupView.style.display = viewName === 'setup' ? 'flex' : 'none';
-    els.gameView.style.display = viewName === 'game' ? 'block' : 'none';
+
+    Object.entries(viewMap).forEach(([name, el]) => {
+      if (!el) return;
+      if (el.classList) el.classList.remove('view-entering', 'view-leaving');
+      if (name !== viewName && name !== prevName) {
+        el.style.display = 'none';
+      }
+    });
+
+    if (nextEl) {
+      nextEl.style.display = viewName === 'game' ? 'block' : 'flex';
+      if (prevName !== viewName && !prefersReducedMotion() && nextEl.classList) {
+        nextEl.classList.add('view-entering');
+      }
+    }
+
+    if (prevEl && prevEl !== nextEl) {
+      if (!prefersReducedMotion() && prevEl.classList && typeof window !== 'undefined' && window.document && window.document.body) {
+        prevEl.classList.add('view-leaving');
+        viewLeaveTimer = setTimeout(() => {
+          viewLeaveTimer = null;
+          if (state.view !== prevName) {
+            prevEl.style.display = 'none';
+            prevEl.classList.remove('view-leaving');
+          }
+        }, 180);
+      } else {
+        prevEl.style.display = 'none';
+      }
+    }
 
     if (viewName === 'home') retriggerStagePop(els.homeView);
     else if (viewName === 'setup') retriggerStagePop(els.setupView);
@@ -661,6 +956,60 @@
       state.lastMove.animate = false;
     }
     applyHoverVisuals();
+    renderWinLineOverlay();
+  }
+
+  function renderWinLineOverlay() {
+    if (!els.winLineSvg) return;
+    els.winLineSvg.innerHTML = '';
+    if (!state.gameOver || !state.winCells || state.winCells.length < 2) return;
+    if (typeof document === 'undefined' || typeof document.createElementNS !== 'function') return;
+
+    const cols = state.board[0].length;
+    const rows = state.board.length;
+    const first = state.winCells[0];
+    const last = state.winCells[state.winCells.length - 1];
+    const firstCell = els.boardGrid.children[first[0] * cols + first[1]];
+    const lastCell = els.boardGrid.children[last[0] * cols + last[1]];
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const w = els.boardGrid.clientWidth || 0;
+    const h = els.boardGrid.clientHeight || 0;
+    let x1;
+    let y1;
+    let x2;
+    let y2;
+
+    if (w > 0 && h > 0 && firstCell && lastCell && typeof firstCell.offsetLeft === 'number') {
+      els.winLineSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      x1 = firstCell.offsetLeft + firstCell.offsetWidth / 2;
+      y1 = firstCell.offsetTop + firstCell.offsetHeight / 2;
+      x2 = lastCell.offsetLeft + lastCell.offsetWidth / 2;
+      y2 = lastCell.offsetTop + lastCell.offsetHeight / 2;
+    } else {
+      els.winLineSvg.setAttribute('viewBox', '0 0 100 100');
+      x1 = ((first[1] + 0.5) / cols) * 100;
+      y1 = ((first[0] + 0.5) / rows) * 100;
+      x2 = ((last[1] + 0.5) / cols) * 100;
+      y2 = ((last[0] + 0.5) / rows) * 100;
+    }
+
+    const glow = document.createElementNS(svgNS, 'line');
+    glow.setAttribute('x1', String(x1));
+    glow.setAttribute('y1', String(y1));
+    glow.setAttribute('x2', String(x2));
+    glow.setAttribute('y2', String(y2));
+    glow.setAttribute('class', 'win-beam-glow');
+
+    const core = document.createElementNS(svgNS, 'line');
+    core.setAttribute('x1', String(x1));
+    core.setAttribute('y1', String(y1));
+    core.setAttribute('x2', String(x2));
+    core.setAttribute('y2', String(y2));
+    core.setAttribute('class', 'win-beam-core');
+
+    els.winLineSvg.appendChild(glow);
+    els.winLineSvg.appendChild(core);
   }
 
   function applyHoverVisuals() {
@@ -781,6 +1130,19 @@
     } else {
       els.statusText.textContent = `Giliran ${getPlayerLabel(state.currentPlayer, true)}`;
     }
+
+    pulseTurnBanner(`${state.gameOver ? state.winner : state.currentPlayer}-${state.isThinking ? 'wait' : 'ready'}`);
+  }
+
+  function pulseTurnBanner(sig) {
+    if (sig === lastTurnSignature) return;
+    lastTurnSignature = sig;
+    if (!els.statusBanner || !els.statusBanner.classList || prefersReducedMotion()) return;
+    els.statusBanner.classList.remove('turn-chip-pop');
+    if (typeof els.statusBanner.offsetWidth === 'number') {
+      void els.statusBanner.offsetWidth;
+    }
+    els.statusBanner.classList.add('turn-chip-pop');
   }
 
   function renderPostGameAnalysis(showPanel) {
@@ -812,10 +1174,14 @@
     const totalTime = botEntries.reduce((acc, m) => acc + m.elapsedMs, 0);
     const avgNodes = botEntries.length > 0 ? Math.round(totalNodes / botEntries.length) : 0;
 
-    els.statTotalMoves.textContent = String(state.moveCount);
-    els.statBotMoves.textContent = String(botEntries.length);
-    els.statAvgNodes.textContent = avgNodes.toLocaleString('id-ID');
+    animateCountUp(els.statTotalMoves, state.moveCount, (n) => String(Math.round(n)));
+    animateCountUp(els.statBotMoves, botEntries.length, (n) => String(Math.round(n)));
+    animateCountUp(els.statAvgNodes, avgNodes, (n) => Math.round(n).toLocaleString('id-ID'));
     els.statTotalTime.textContent = `${totalTime.toFixed(1)} ms`;
+
+    if (state.winner !== 'DRAW') {
+      launchConfettiBurst();
+    }
 
     els.postGameTableBody.innerHTML = '';
     state.moveLog.forEach((entry, idx) => {
@@ -898,6 +1264,7 @@
       state.winCells = winInfo.cells;
       clearTimers();
       renderAll(false);
+      playSfx(winInfo.winner === 'DRAW' ? 'drop' : 'win');
       state.postGameTimer = setTimeout(() => {
         state.postGameTimer = null;
         renderPostGameAnalysis(true);
@@ -907,6 +1274,7 @@
 
     state.currentPlayer = AI_LIB.getNextPlayer(player, pCount);
     renderAll(false);
+    playSfx('drop');
     return true;
   }
 
@@ -1159,7 +1527,153 @@
     `;
   }
 
+  function animateCountUp(el, targetVal, formatter) {
+    if (!el) return;
+    if (
+      targetVal <= 0
+      || prefersReducedMotion()
+      || typeof window === 'undefined'
+      || typeof window.requestAnimationFrame !== 'function'
+    ) {
+      el.textContent = formatter(targetVal);
+      return;
+    }
+    const start = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const duration = 280;
+    function step(now) {
+      const elapsed = Math.min(1, Math.max(0, (now - start) / duration));
+      const eased = 1 - Math.pow(1 - elapsed, 3);
+      el.textContent = formatter(targetVal * eased);
+      if (elapsed < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        el.textContent = formatter(targetVal);
+      }
+    }
+    window.requestAnimationFrame(step);
+  }
+
+  function launchConfettiBurst() {
+    if (
+      !els.confettiCanvas
+      || prefersReducedMotion()
+      || typeof window === 'undefined'
+      || typeof window.requestAnimationFrame !== 'function'
+      || typeof els.confettiCanvas.getContext !== 'function'
+    ) {
+      return;
+    }
+    const canvas = els.confettiCanvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (activeConfettiRaf) {
+      window.cancelAnimationFrame(activeConfettiRaf);
+      activeConfettiRaf = null;
+    }
+    canvas.width = window.innerWidth || 1280;
+    canvas.height = window.innerHeight || 720;
+
+    const palette = ['#fd5a46', '#ffc567', '#00995e', '#552cb7', '#058cd7'];
+    const particles = [];
+    for (let i = 0; i < 46; i++) {
+      particles.push({
+        x: (canvas.width * 0.5) + (Math.random() - 0.5) * 260,
+        y: canvas.height * 0.25 + (Math.random() - 0.5) * 60,
+        vx: (Math.random() - 0.5) * 9,
+        vy: -Math.random() * 7 - 2,
+        w: 8 + Math.random() * 6,
+        h: 6 + Math.random() * 5,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 0.22,
+        color: palette[i % palette.length],
+      });
+    }
+
+    const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    function tick(now) {
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (elapsed > 1750) {
+        activeConfettiRaf = null;
+        return;
+      }
+      const alpha = elapsed > 1250 ? Math.max(0, 1 - (elapsed - 1250) / 500) : 1;
+      ctx.globalAlpha = alpha;
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.34;
+        p.rot += p.vr;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      ctx.globalAlpha = 1;
+      activeConfettiRaf = window.requestAnimationFrame(tick);
+    }
+    activeConfettiRaf = window.requestAnimationFrame(tick);
+  }
+
+  function bindGridKeyboardNav(containerEl) {
+    if (!containerEl || typeof containerEl.addEventListener !== 'function') return;
+    containerEl.addEventListener('keydown', (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      if (!containerEl.querySelectorAll) return;
+      const items = Array.from(containerEl.querySelectorAll('button')).filter(
+        (b) => !b.disabled && (!b.style || b.style.display !== 'none')
+      );
+      if (items.length <= 1) return;
+      const idx = items.indexOf(e.target);
+      if (idx === -1) return;
+      e.preventDefault();
+      const delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
+      const next = items[(idx + delta + items.length) % items.length];
+      if (next && typeof next.focus === 'function') next.focus();
+    });
+  }
+
   function bindEvents() {
+    if (els.soundToggleBtn) {
+      els.soundToggleBtn.addEventListener('click', toggleSoundEnabled);
+    }
+
+    if (els.openAdvancedBtn) {
+      els.openAdvancedBtn.addEventListener('click', () => {
+        playSfx('click');
+        openAdvancedDrawer();
+      });
+    }
+    if (els.closeAdvancedBtn) {
+      els.closeAdvancedBtn.addEventListener('click', closeAdvancedDrawer);
+    }
+    if (els.applyAdvancedBtn) {
+      els.applyAdvancedBtn.addEventListener('click', () => {
+        playSfx('click');
+        closeAdvancedDrawer();
+      });
+    }
+    if (els.advancedSetupDetails) {
+      els.advancedSetupDetails.addEventListener('click', (e) => {
+        if (e.target === els.advancedSetupDetails) closeAdvancedDrawer();
+      });
+    }
+
+    [
+      els.modeChoiceGrid,
+      els.boardModeGrid,
+      els.boardSizeGrid,
+      els.diffChoiceGrid,
+      els.firstChoiceGrid,
+      els.fourPresetGrid,
+      els.fourSeatsGrid,
+    ].forEach(bindGridKeyboardNav);
+
     els.modeChoiceGrid.addEventListener('click', (e) => {
       const btn = e.target.closest('.choice-card');
       if (!btn) return;
@@ -1168,11 +1682,14 @@
         state.boardSize = nextMode === '4p' ? '8x10' : '6x7';
       }
       state.gameMode = nextMode;
-      if (els.advancedSetupDetails && nextMode === '4p') {
-        els.advancedSetupDetails.open = true;
-      }
       syncMenuUI();
       pulsePickedCard(btn);
+      playSfx('click');
+      if (nextMode === '4p' && els.openAdvancedBtn && els.openAdvancedBtn.classList) {
+        els.openAdvancedBtn.classList.remove('has-highlight');
+        if (typeof els.openAdvancedBtn.offsetWidth === 'number') void els.openAdvancedBtn.offsetWidth;
+        els.openAdvancedBtn.classList.add('has-highlight');
+      }
     });
 
     if (els.fourPresetGrid) {
@@ -1183,6 +1700,7 @@
         if (!preset) return;
         state.fourSeats = { ...preset };
         syncMenuUI();
+        playSfx('click');
       });
     }
 
@@ -1194,6 +1712,7 @@
         state.fourSeats[seat] = state.fourSeats[seat] === 'bot' ? 'human' : 'bot';
         syncMenuUI();
         pulsePickedCard(btn);
+        playSfx('click');
       });
     }
 
@@ -1203,6 +1722,7 @@
       state.boardMode = btn.dataset.bmode;
       syncMenuUI();
       pulsePickedCard(btn);
+      playSfx('click');
     });
 
     if (els.boardSizeGrid) {
@@ -1213,6 +1733,7 @@
         state.userPickedSize = true;
         syncMenuUI();
         pulsePickedCard(btn);
+        playSfx('click');
       });
     }
 
@@ -1222,6 +1743,10 @@
       state.difficulty = btn.dataset.diff;
       syncMenuUI();
       pulsePickedCard(btn);
+      playSfx('click');
+      if (state.difficulty === 'Custom') {
+        openAdvancedDrawer();
+      }
     });
 
     els.firstChoiceGrid.addEventListener('click', (e) => {
@@ -1230,6 +1755,7 @@
       state.firstChoice = btn.dataset.first;
       syncMenuUI();
       pulsePickedCard(btn);
+      playSfx('click');
     });
 
     els.algorithmSelect.addEventListener('change', syncMenuUI);
@@ -1299,6 +1825,10 @@
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (els.advancedSetupDetails && els.advancedSetupDetails.style.display === 'flex') {
+          closeAdvancedDrawer();
+          return;
+        }
         if (els.arenaOverflowMenu && els.arenaOverflowMenu.open) {
           closeOverflowMenu();
           return;
@@ -1318,8 +1848,13 @@
         handleHumanMove(Number(e.key));
       }
     });
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('resize', renderWinLineOverlay);
+    }
   }
 
+  syncSoundToggleUI();
   syncMenuUI();
   bindEvents();
   switchView('home');
