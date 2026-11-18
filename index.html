@@ -379,6 +379,8 @@
                 </div>
 
                 <button type="button" id="resetBtn" class="btn-popover-item">Reset papan</button>
+                <button type="button" id="menuInstallPwaBtn" class="btn-popover-item">Instal aplikasi PWA</button>
+                <button type="button" id="menuTestPwaToastBtn" class="btn-popover-item subtle">Tes notifikasi update</button>
                 <button type="button" id="backMenuBtn" class="btn-popover-item subtle">Ke menu utama</button>
               </div>
             </details>
@@ -643,6 +645,49 @@
     <div id="pwaUpdateToast" class="pwa-toast" role="status" aria-live="polite" style="display: none;">
       <span class="pwa-toast-text">Update tersedia!</span>
       <button type="button" id="pwaReloadBtn" class="pwa-reload-btn">Muat ulang</button>
+    </div>
+
+    <!-- PWA FLOATING NOTIFICATION BANNER -->
+    <div id="pwaBanner" class="pwa-banner" role="region" aria-label="Notifikasi instalasi aplikasi" style="display: none;">
+      <div class="pwa-banner-content">
+        <span class="pwa-banner-icon" aria-hidden="true">📲</span>
+        <div class="pwa-banner-text">
+          <strong>Pasang Connect-Four AI</strong>
+          <p>Mainkan lebih cepat, responsif, dan offline kapan saja tanpa kuota.</p>
+        </div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button type="button" id="pwaBannerInstallBtn" class="btn-pwa-primary">Pasang sekarang</button>
+        <button type="button" id="pwaBannerCloseBtn" class="btn-pwa-dismiss" aria-label="Tutup notifikasi">&times;</button>
+      </div>
+    </div>
+
+    <!-- PWA GUIDE MODAL -->
+    <div id="pwaGuideModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pwaGuideHeading" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="pwaGuideHeading" class="modal-title">Panduan Instalasi PWA</h3>
+          <button type="button" id="closePwaGuideBtn" class="modal-close-btn" aria-label="Tutup panduan">&times;</button>
+        </div>
+        <div class="modal-body pwa-guide-body">
+          <div class="pwa-guide-card">
+            <h4>Mengapa fitur PWA butuh Localhost atau HTTPS?</h4>
+            <p>Aturan keamanan browser mewajibkan <em>Service Worker</em> dijalankan melalui koneksi aman (<strong>HTTPS</strong> atau <strong>http://localhost</strong>). Jika dibuka langsung lewat file (<code>file:///</code>), browser mematikan instalasi otomatis.</p>
+          </div>
+          <div class="pwa-guide-steps">
+            <h4>Langkah Mudah Menjalankan &amp; Memasang PWA:</h4>
+            <ol>
+              <li>Buka terminal di folder project lalu jalankan server lokal:
+                <pre><code>python -m http.server 8080</code></pre>
+                atau
+                <pre><code>npx serve .</code></pre>
+              </li>
+              <li>Buka browser di <strong>http://localhost:8080</strong> (atau buka link GitHub Pages).</li>
+              <li>Klik ikon <strong>⬇ Instal</strong> di pojok kanan address bar browser (atau tombol <strong>⬇ Instal</strong> di bar atas game).</li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

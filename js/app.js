@@ -214,6 +214,13 @@
     pwaUpdateToast: document.getElementById('pwaUpdateToast'),
     pwaReloadBtn: document.getElementById('pwaReloadBtn'),
     boardDustLayer: document.getElementById('boardDustLayer'),
+    pwaBanner: document.getElementById('pwaBanner'),
+    pwaBannerInstallBtn: document.getElementById('pwaBannerInstallBtn'),
+    pwaBannerCloseBtn: document.getElementById('pwaBannerCloseBtn'),
+    pwaGuideModal: document.getElementById('pwaGuideModal'),
+    closePwaGuideBtn: document.getElementById('closePwaGuideBtn'),
+    menuInstallPwaBtn: document.getElementById('menuInstallPwaBtn'),
+    menuTestPwaToastBtn: document.getElementById('menuTestPwaToastBtn'),
   };
 
   // =========================================================================
@@ -2123,6 +2130,10 @@
           closeModal(els.infoModal);
           return;
         }
+        if (els.pwaGuideModal && els.pwaGuideModal.style.display === 'flex') {
+          closeModal(els.pwaGuideModal);
+          return;
+        }
       }
       if (state.view !== 'game' || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
       const maxColKey = String(state.board[0].length - 1);
@@ -2147,8 +2158,31 @@
       });
     }
 
-    // PWA Install Prompt
+    // PWA Install & Notifications
+    const PWA_DISMISSED_KEY = 'connect4_pwa_banner_dismissed';
     let deferredInstallPrompt = null;
+
+    function openPwaGuideModal() {
+      openModal(els.pwaGuideModal);
+    }
+
+    async function triggerPwaInstallFlow() {
+      playSfx('click');
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        try {
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            if (els.pwaInstallBtn) els.pwaInstallBtn.style.display = 'none';
+            if (els.pwaBanner) els.pwaBanner.style.display = 'none';
+          }
+        } catch (_) {}
+        deferredInstallPrompt = null;
+      } else {
+        openPwaGuideModal();
+      }
+    }
+
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -2156,22 +2190,72 @@
         if (els.pwaInstallBtn) {
           els.pwaInstallBtn.style.display = 'inline-flex';
         }
+        let dismissed = false;
+        try {
+          dismissed = window.localStorage && window.localStorage.getItem(PWA_DISMISSED_KEY) === 'true';
+        } catch (_) {}
+        if (!dismissed && els.pwaBanner) {
+          els.pwaBanner.style.display = 'flex';
+        }
       });
     }
 
     if (els.pwaInstallBtn) {
-      els.pwaInstallBtn.addEventListener('click', async () => {
-        if (!deferredInstallPrompt) return;
+      els.pwaInstallBtn.addEventListener('click', triggerPwaInstallFlow);
+    }
+
+    if (els.pwaBannerInstallBtn) {
+      els.pwaBannerInstallBtn.addEventListener('click', triggerPwaInstallFlow);
+    }
+
+    if (els.pwaBannerCloseBtn) {
+      els.pwaBannerCloseBtn.addEventListener('click', () => {
         playSfx('click');
-        deferredInstallPrompt.prompt();
         try {
-          const choice = await deferredInstallPrompt.userChoice;
-          if (choice && choice.outcome === 'accepted') {
-            if (els.pwaInstallBtn) els.pwaInstallBtn.style.display = 'none';
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(PWA_DISMISSED_KEY, 'true');
           }
         } catch (_) {}
-        deferredInstallPrompt = null;
+        if (els.pwaBanner) els.pwaBanner.style.display = 'none';
       });
+    }
+
+    if (els.closePwaGuideBtn) {
+      els.closePwaGuideBtn.addEventListener('click', () => closeModal(els.pwaGuideModal));
+    }
+    if (els.pwaGuideModal) {
+      els.pwaGuideModal.addEventListener('click', (e) => {
+        if (e.target === els.pwaGuideModal) closeModal(els.pwaGuideModal);
+      });
+    }
+
+    if (els.menuInstallPwaBtn) {
+      els.menuInstallPwaBtn.addEventListener('click', () => {
+        closeOverflowMenu();
+        triggerPwaInstallFlow();
+      });
+    }
+
+    if (els.menuTestPwaToastBtn) {
+      els.menuTestPwaToastBtn.addEventListener('click', () => {
+        closeOverflowMenu();
+        playSfx('click');
+        showPwaUpdateToast();
+      });
+    }
+
+    // Auto-show PWA banner after 1.2s if not standalone and not dismissed
+    if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
+      setTimeout(() => {
+        const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+        let dismissed = false;
+        try {
+          dismissed = window.localStorage && window.localStorage.getItem(PWA_DISMISSED_KEY) === 'true';
+        } catch (_) {}
+        if (!isStandalone && !dismissed && els.pwaBanner) {
+          els.pwaBanner.style.display = 'flex';
+        }
+      }, 1200);
     }
 
     // PWA Service Worker Registration & Update Notification
