@@ -41,11 +41,13 @@
     history: [],
     compareTarget: null,
     isThinking: false,
+    isAnimatingDrop: false,
     autoPlayPaused: false,
     matchGeneration: 0,
     autoPlayTimer: null,
     pendingBotTimer: null,
     postGameTimer: null,
+    dropTimer: null,
     hoverCol: -1,
   };
 
@@ -207,26 +209,43 @@
     winLineSvg: document.getElementById('winLineSvg'),
     confettiCanvas: document.getElementById('confettiCanvas'),
     soundToggleBtn: document.getElementById('soundToggleBtn'),
+    sfxVolumeSlider: document.getElementById('sfxVolumeSlider'),
+    pwaInstallBtn: document.getElementById('pwaInstallBtn'),
+    pwaUpdateToast: document.getElementById('pwaUpdateToast'),
+    pwaReloadBtn: document.getElementById('pwaReloadBtn'),
+    boardDustLayer: document.getElementById('boardDustLayer'),
   };
 
   // =========================================================================
-  // GAME-FEEL PRESENTATION HELPERS (SFX, PREVIEW, DRAWER, TRANSITIONS, VFX)
+  // GAME-FEEL PRESENTATION HELPERS (SYNTHESIZED SFX, HAPTICS, DUST, SHAKE)
   // =========================================================================
 
   const SFX_STORAGE_KEY = 'connect4_sfx_enabled';
-  let sfxEnabled = false;
+  const SFX_VOLUME_KEY = 'connect4_sfx_volume';
+  let sfxEnabled = true;
+  let sfxVolume = 0.6;
   let audioCtx = null;
+  let masterGain = null;
+  let masterCompressor = null;
+  let activeVoices = 0;
+  const MAX_VOICES = 4;
   let lastTurnSignature = '';
   let viewLeaveTimer = null;
   let activeConfettiRaf = null;
 
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      sfxEnabled = window.localStorage.getItem(SFX_STORAGE_KEY) === 'true';
+      const storedSfx = window.localStorage.getItem(SFX_STORAGE_KEY);
+      if (storedSfx !== null) {
+        sfxEnabled = storedSfx === 'true';
+      }
+      const storedVol = window.localStorage.getItem(SFX_VOLUME_KEY);
+      if (storedVol !== null) {
+        const v = parseFloat(storedVol);
+        if (!isNaN(v) && v >= 0 && v <= 1) sfxVolume = v;
+      }
     }
-  } catch (_) {
-    sfxEnabled = false;
-  }
+  } catch (_) {}
 
   function prefersReducedMotion() {
     try {
@@ -253,6 +272,21 @@
       );
     }
     els.soundToggleBtn.title = sfxEnabled ? 'Suara efek: Nyala' : 'Suara efek: Mati';
+    if (els.sfxVolumeSlider) {
+      els.sfxVolumeSlider.value = String(Math.round(sfxVolume * 100));
+    }
+  }
+
+  function setSfxVolume(vol) {
+    sfxVolume = Math.max(0, Math.min(1, vol));
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(SFX_VOLUME_KEY, String(sfxVolume));
+      }
+    } catch (_) {}
+    if (masterGain && audioCtx) {
+      masterGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+    }
   }
 
   function toggleSoundEnabled() {
@@ -273,45 +307,131 @@
     if (!Ctor) return null;
     try {
       audioCtx = new Ctor();
+      masterCompressor = audioCtx.createDynamicsCompressor();
+      masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
+      masterCompressor.knee.setValueAtTime(12, audioCtx.currentTime);
+      masterCompressor.ratio.setValueAtTime(8, audioCtx.currentTime);
+      masterCompressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+      masterCompressor.release.setValueAtTime(0.2, audioCtx.currentTime);
+
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+
+      masterCompressor.connect(masterGain);
+      masterGain.connect(audioCtx.destination);
     } catch (_) {
       return null;
     }
     return audioCtx;
   }
 
-  function playSfx(kind) {
+  function resumeAudioOnGesture() {
+    const ctx = ensureAudioContext();
+    if (ctx && ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+      ctx.resume();
+    }
+  }
+
+  function playSfx(kind, params = {}) {
     if (!sfxEnabled) return;
     const ctx = ensureAudioContext();
-    if (!ctx) return;
+    if (!ctx || !masterCompressor) return;
     try {
       if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
         ctx.resume();
       }
+      if (activeVoices >= MAX_VOICES && kind === 'hover') return;
+
       const now = ctx.currentTime;
+      activeVoices++;
+      const releaseVoice = (delaySec) => {
+        setTimeout(() => { activeVoices = Math.max(0, activeVoices - 1); }, Math.round(delaySec * 1000));
+      };
+
       if (kind === 'click') {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(620, now);
-        osc.frequency.exponentialRampToValueAtTime(340, now + 0.045);
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.frequency.setValueAtTime(680, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.035);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(masterCompressor);
         osc.start(now);
-        osc.stop(now + 0.055);
-      } else if (kind === 'drop') {
+        osc.stop(now + 0.045);
+        releaseVoice(0.05);
+      } else if (kind === 'hover') {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(125, now + 0.11);
-        gain.gain.setValueAtTime(0.09, now);
+        osc.frequency.setValueAtTime(520, now);
+        gain.gain.setValueAtTime(0.025, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+        osc.connect(gain);
+        gain.connect(masterCompressor);
+        osc.start(now);
+        osc.stop(now + 0.03);
+        releaseVoice(0.035);
+      } else if (kind === 'whoosh') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.12);
+        gain.gain.setValueAtTime(0.06, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(masterCompressor);
         osc.start(now);
         osc.stop(now + 0.14);
+        releaseVoice(0.15);
+      } else if (kind === 'thud') {
+        const row = typeof params.row === 'number' ? params.row : 3;
+        const maxRows = typeof params.maxRows === 'number' ? params.maxRows : 6;
+        const depthRatio = Math.min(1, Math.max(0, row / (maxRows - 1 || 1)));
+        const baseFreq = Math.round(115 - depthRatio * 45);
+        const vol = 0.16 + depthRatio * 0.10;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(38, now + 0.08);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(masterCompressor);
+        osc.start(now);
+        osc.stop(now + 0.095);
+
+        const bounceOsc = ctx.createOscillator();
+        const bounceGain = ctx.createGain();
+        const bNow = now + 0.068;
+        bounceOsc.type = 'sine';
+        bounceOsc.frequency.setValueAtTime(baseFreq * 1.25, bNow);
+        bounceOsc.frequency.exponentialRampToValueAtTime(50, bNow + 0.05);
+        bounceGain.gain.setValueAtTime(vol * 0.38, bNow);
+        bounceGain.gain.exponentialRampToValueAtTime(0.001, bNow + 0.055);
+        bounceOsc.connect(bounceGain);
+        bounceGain.connect(masterCompressor);
+        bounceOsc.start(bNow);
+        bounceOsc.stop(bNow + 0.06);
+
+        releaseVoice(0.14);
+      } else if (kind === 'botTurn') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(460, now);
+        osc.frequency.setValueAtTime(620, now + 0.04);
+        gain.gain.setValueAtTime(0.07, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+        osc.connect(gain);
+        gain.connect(masterCompressor);
+        osc.start(now);
+        osc.stop(now + 0.09);
+        releaseVoice(0.1);
       } else if (kind === 'win') {
         const notes = [523.25, 659.25, 783.99, 1046.5];
         notes.forEach((freq, idx) => {
@@ -320,15 +440,123 @@
           const gain = ctx.createGain();
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, t0);
-          gain.gain.setValueAtTime(0.08, t0);
-          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.19);
+          gain.gain.setValueAtTime(0.12, t0);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
           osc.connect(gain);
-          gain.connect(ctx.destination);
+          gain.connect(masterCompressor);
           osc.start(t0);
-          osc.stop(t0 + 0.2);
+          osc.stop(t0 + 0.23);
         });
+        releaseVoice(0.5);
+      } else if (kind === 'lose') {
+        const notes = [440, 392, 349.23, 293.66];
+        notes.forEach((freq, idx) => {
+          const t0 = now + idx * 0.085;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t0);
+          gain.gain.setValueAtTime(0.10, t0);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.20);
+          osc.connect(gain);
+          gain.connect(masterCompressor);
+          osc.start(t0);
+          osc.stop(t0 + 0.21);
+        });
+        releaseVoice(0.45);
+      } else if (kind === 'draw') {
+        [349.23, 440].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+          osc.connect(gain);
+          gain.connect(masterCompressor);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        });
+        releaseVoice(0.3);
+      } else if (kind === 'undo') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(560, now + 0.08);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(masterCompressor);
+        osc.start(now);
+        osc.stop(now + 0.095);
+        releaseVoice(0.1);
       }
     } catch (_) {}
+  }
+
+  function triggerHaptic(type, arg) {
+    if (!sfxEnabled) return;
+    try {
+      if (typeof window !== 'undefined' && window.navigator && typeof window.navigator.vibrate === 'function') {
+        if (type === 'drop') {
+          const row = typeof arg === 'number' ? arg : 3;
+          window.navigator.vibrate(Math.min(35, 12 + row * 3));
+        } else if (type === 'win') {
+          window.navigator.vibrate([40, 50, 70]);
+        }
+      }
+    } catch (_) {}
+  }
+
+  function triggerBoardImpact(row, col) {
+    if (prefersReducedMotion() || !els.boardGrid) return;
+    const shakePx = Math.min(2.5, 0.8 + row * 0.22);
+    els.boardGrid.style.setProperty('--shake-px', `${shakePx}px`);
+    els.boardGrid.classList.remove('board-impact');
+    if (typeof els.boardGrid.offsetWidth === 'number') void els.boardGrid.offsetWidth;
+    els.boardGrid.classList.add('board-impact');
+    setTimeout(() => {
+      if (els.boardGrid && els.boardGrid.classList) {
+        els.boardGrid.classList.remove('board-impact');
+      }
+    }, 180);
+
+    if (els.colSelectors && els.colSelectors.children && els.colSelectors.children[col]) {
+      const colBtn = els.colSelectors.children[col];
+      colBtn.classList.remove('col-landing-flash');
+      if (typeof colBtn.offsetWidth === 'number') void colBtn.offsetWidth;
+      colBtn.classList.add('col-landing-flash');
+      setTimeout(() => {
+        if (colBtn && colBtn.classList) colBtn.classList.remove('col-landing-flash');
+      }, 220);
+    }
+  }
+
+  function createLandingDust(row, col) {
+    if (prefersReducedMotion() || !els.boardDustLayer) return;
+    const cols = state.board && state.board[0] ? state.board[0].length : 7;
+    const rows = state.board ? state.board.length : 6;
+    const burst = document.createElement('div');
+    burst.className = 'dust-burst';
+    const leftPct = ((col + 0.5) / cols) * 100;
+    const topPct = ((row + 0.95) / rows) * 100;
+    burst.style.left = `${leftPct}%`;
+    burst.style.top = `${topPct}%`;
+
+    for (let i = 0; i < 5; i++) {
+      const p = document.createElement('span');
+      p.className = 'dust-particle';
+      const angle = (Math.PI / 6) + (Math.random() * (2 * Math.PI / 3));
+      const dist = 12 + Math.random() * 16;
+      p.style.setProperty('--dx', `${(Math.cos(angle) * dist).toFixed(1)}px`);
+      p.style.setProperty('--dy', `${(-Math.sin(angle) * dist).toFixed(1)}px`);
+      burst.appendChild(p);
+    }
+    els.boardDustLayer.appendChild(burst);
+    setTimeout(() => {
+      if (burst.parentNode) burst.parentNode.removeChild(burst);
+    }, 280);
   }
 
   function getBotSpeedFactor() {
@@ -673,7 +901,12 @@
       clearTimeout(state.postGameTimer);
       state.postGameTimer = null;
     }
+    if (state.dropTimer) {
+      clearTimeout(state.dropTimer);
+      state.dropTimer = null;
+    }
     state.isThinking = false;
+    state.isAnimatingDrop = false;
   }
 
   function retriggerStagePop(viewEl) {
@@ -936,6 +1169,9 @@
             if (state.lastMove.animate) {
               disc.classList.add('drop-anim');
               disc.style.setProperty('--drop-rows', String(r + 1));
+              if (state.lastMove.duration) {
+                disc.style.setProperty('--drop-duration', `${state.lastMove.duration}ms`);
+              }
             }
           }
           cell.appendChild(disc);
@@ -1041,6 +1277,9 @@
     if (state.hoverCol === col) return;
     state.hoverCol = col;
     applyHoverVisuals();
+    if (col >= 0 && !state.gameOver && !state.isThinking && !state.isAnimatingDrop && !isBotPlayer(state.currentPlayer)) {
+      playSfx('hover');
+    }
   }
 
   function renderBoardLegend() {
@@ -1227,7 +1466,12 @@
     saveSnapshot();
     AI_LIB.dropPiece(state.board, row, col, player);
     state.moveCount += 1;
-    state.lastMove = { row, col, animate: true };
+
+    // Realistic physics: duration scales with distance (row + 1)
+    const dropDistance = row + 1;
+    const dropDuration = prefersReducedMotion() ? 60 : Math.round(140 + Math.sqrt(dropDistance) * 75);
+    state.isAnimatingDrop = true;
+    state.lastMove = { row, col, animate: true, duration: dropDuration };
 
     if (aiResult) {
       state.lastAiResult = aiResult;
@@ -1257,36 +1501,74 @@
       elapsedMs: aiResult ? aiResult.elapsedMs : 0,
     });
 
-    const winInfo = AI_LIB.getWinnerInfo(state.board);
-    if (winInfo.winner !== null) {
-      state.gameOver = true;
-      state.winner = winInfo.winner;
-      state.winCells = winInfo.cells;
-      clearTimers();
-      renderAll(false);
-      playSfx(winInfo.winner === 'DRAW' ? 'drop' : 'win');
-      state.postGameTimer = setTimeout(() => {
-        state.postGameTimer = null;
-        renderPostGameAnalysis(true);
-      }, 360);
-      return true;
+    renderAll(false);
+    playSfx('whoosh');
+
+    const totalRows = state.board ? state.board.length : 6;
+    const impactTime = prefersReducedMotion() ? 0 : Math.round(dropDuration * 0.68);
+
+    if (impactTime > 0) {
+      setTimeout(() => {
+        playSfx('thud', { row, maxRows: totalRows });
+        triggerBoardImpact(row, col);
+        createLandingDust(row, col);
+        triggerHaptic('drop', row);
+      }, impactTime);
+    } else {
+      playSfx('thud', { row, maxRows: totalRows });
     }
 
-    state.currentPlayer = AI_LIB.getNextPlayer(player, pCount);
-    renderAll(false);
-    playSfx('drop');
+    if (state.dropTimer) clearTimeout(state.dropTimer);
+    state.dropTimer = setTimeout(() => {
+      state.dropTimer = null;
+      state.isAnimatingDrop = false;
+
+      const winInfo = AI_LIB.getWinnerInfo(state.board);
+      if (winInfo.winner !== null) {
+        state.gameOver = true;
+        state.winner = winInfo.winner;
+        state.winCells = winInfo.cells;
+        clearTimers();
+        renderAll(false);
+
+        if (winInfo.winner === 'DRAW') {
+          playSfx('draw');
+          if (els.boardGrid && !prefersReducedMotion()) {
+            els.boardGrid.classList.add('board-draw-shake');
+            setTimeout(() => {
+              if (els.boardGrid && els.boardGrid.classList) els.boardGrid.classList.remove('board-draw-shake');
+            }, 300);
+          }
+        } else {
+          const humanWon = state.gameMode === 'hvb' ? winInfo.winner === HUMAN : true;
+          playSfx(humanWon ? 'win' : 'lose');
+          triggerHaptic('win');
+        }
+
+        state.postGameTimer = setTimeout(() => {
+          state.postGameTimer = null;
+          renderPostGameAnalysis(true);
+        }, 360);
+        return;
+      }
+
+      state.currentPlayer = AI_LIB.getNextPlayer(player, pCount);
+      renderAll(false);
+
+      if (isBotPlayer(state.currentPlayer) && !state.gameOver) {
+        scheduleBotTurn(isAllBots() ? 120 : 180);
+      }
+    }, dropDuration);
+
     return true;
   }
 
   function handleHumanMove(col) {
-    if (state.view !== 'game' || state.gameOver || state.isThinking) return;
+    if (state.view !== 'game' || state.gameOver || state.isThinking || state.isAnimatingDrop) return;
     if (isBotPlayer(state.currentPlayer)) return;
     if (!AI_LIB.isValidLocation(state.board, col)) return;
 
-    const moved = executeDrop(col, state.currentPlayer, null);
-    if (moved && !state.gameOver && isBotPlayer(state.currentPlayer)) {
-      scheduleBotTurn(80);
-    }
+    executeDrop(col, state.currentPlayer, null);
   }
 
   function scheduleBotTurn(delayMs = 80) {
@@ -1294,6 +1576,7 @@
     state.isThinking = true;
     renderArenaHeaderAndStatus();
     applyHoverVisuals();
+    playSfx('botTurn');
 
     state.pendingBotTimer = setTimeout(async () => {
       state.pendingBotTimer = null;
@@ -1343,10 +1626,7 @@
 
     state.isThinking = false;
     if (res && res.bestCol !== -1) {
-      const dropped = executeDrop(res.bestCol, piece, res);
-      if (dropped && !state.gameOver && !isAllBots() && isBotPlayer(state.currentPlayer)) {
-        scheduleBotTurn(320);
-      }
+      executeDrop(res.bestCol, piece, res);
     } else {
       renderArenaHeaderAndStatus();
     }
@@ -1379,6 +1659,7 @@
   function resetGame() {
     state.matchGeneration += 1;
     clearTimers();
+    playSfx('undo');
 
     const dims = (AI_LIB.BOARD_SIZES && AI_LIB.BOARD_SIZES[state.boardSize]) || { rows: ROWS, cols: COLS };
     const setup = AI_LIB.createSpecialSetup(state.boardMode, dims.rows, dims.cols);
@@ -1446,9 +1727,10 @@
   }
 
   function undoMove() {
-    if (state.history.length === 0 || state.isThinking) return;
+    if (state.history.length === 0 || state.isThinking || state.isAnimatingDrop) return;
     state.matchGeneration += 1;
     clearTimers();
+    playSfx('undo');
 
     if (!isAllBots() && Object.values(getSeatRoles()).includes('human')) {
       let targetIdx = state.history.length - 1;
@@ -1848,6 +2130,95 @@
         handleHumanMove(Number(e.key));
       }
     });
+
+    // Web Audio first gesture unlock
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      ['click', 'touchstart', 'keydown'].forEach((evt) => {
+        window.addEventListener(evt, resumeAudioOnGesture, { once: true, passive: true });
+      });
+    }
+
+    // Volume Slider in Overflow Menu
+    if (els.sfxVolumeSlider) {
+      els.sfxVolumeSlider.value = String(Math.round(sfxVolume * 100));
+      els.sfxVolumeSlider.addEventListener('input', (e) => {
+        const v = Number(e.target.value) / 100;
+        setSfxVolume(v);
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredInstallPrompt = null;
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        if (els.pwaInstallBtn) {
+          els.pwaInstallBtn.style.display = 'inline-flex';
+        }
+      });
+    }
+
+    if (els.pwaInstallBtn) {
+      els.pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        playSfx('click');
+        deferredInstallPrompt.prompt();
+        try {
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            if (els.pwaInstallBtn) els.pwaInstallBtn.style.display = 'none';
+          }
+        } catch (_) {}
+        deferredInstallPrompt = null;
+      });
+    }
+
+    // PWA Service Worker Registration & Update Notification
+    let swRegistration = null;
+    function showPwaUpdateToast() {
+      if (els.pwaUpdateToast) {
+        els.pwaUpdateToast.style.display = 'flex';
+      }
+    }
+
+    if (
+      typeof window !== 'undefined'
+      && typeof window.addEventListener === 'function'
+      && typeof navigator !== 'undefined'
+      && 'serviceWorker' in navigator
+      && window.location
+      && window.location.protocol
+      && window.location.protocol.startsWith('http')
+    ) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          swRegistration = reg;
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  showPwaUpdateToast();
+                }
+              });
+            }
+          });
+        }).catch((err) => {
+          console.warn('SW registration skipped or failed:', err);
+        });
+      });
+    }
+
+    if (els.pwaReloadBtn) {
+      els.pwaReloadBtn.addEventListener('click', () => {
+        playSfx('click');
+        if (swRegistration && swRegistration.waiting) {
+          swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        window.location.reload();
+      });
+    }
 
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('resize', renderWinLineOverlay);

@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Connect-Four AI — Minimax &amp; Alpha-Beta</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#FFC25E" />
+  <meta name="description" content="Game Connect-Four interaktif dengan AI Minimax dan Alpha-Beta Pruning. Dukungan mode 2P, 4-Player, dan papan Obstacle." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Connect4 AI" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
@@ -23,10 +30,10 @@
         <button
           type="button"
           id="soundToggleBtn"
-          class="sfx-corner-btn"
-          aria-label="Aktifkan suara efek game"
-          aria-pressed="false"
-          title="Suara efek: Mati"
+          class="sfx-corner-btn is-active"
+          aria-label="Matikan suara efek game"
+          aria-pressed="true"
+          title="Suara efek: Nyala"
         >
           <svg class="sfx-icon sfx-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -39,6 +46,21 @@
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
           </svg>
           <span class="sfx-label">Suara</span>
+        </button>
+        <button
+          type="button"
+          id="pwaInstallBtn"
+          class="top-link-btn pwa-install-btn"
+          style="display: none;"
+          aria-label="Instal aplikasi Connect-Four AI"
+          title="Instal aplikasi ke perangkat"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Instal</span>
         </button>
         <a
           class="top-link-btn"
@@ -346,6 +368,11 @@
                   </select>
                 </label>
 
+                <label class="popover-row" for="sfxVolumeSlider">
+                  <span>Volume efek</span>
+                  <input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.05" value="0.6" class="volume-slider compact" aria-label="Volume efek suara" />
+                </label>
+
                 <div id="bvbBar" class="popover-bvb" style="display: none;">
                   <button type="button" id="botStepBtn" class="btn-soft">1 Langkah</button>
                   <button type="button" id="autoPlayBtn" class="btn-green">Auto-Play</button>
@@ -364,6 +391,7 @@
               <div id="hoverPreviewRow" class="hover-preview-row" aria-hidden="true"></div>
               <div class="board-frame">
                 <div id="boardGrid" class="board-grid" role="grid" aria-label="Papan Connect-Four"></div>
+                <div id="boardDustLayer" class="board-dust-layer" aria-hidden="true"></div>
                 <svg id="winLineSvg" class="win-line-svg" aria-hidden="true"></svg>
               </div>
               <div id="colSelectors" class="col-selectors" aria-label="Hint kolom keyboard"></div>
@@ -610,6 +638,11 @@
 
     <div id="infoModal" style="display: none;" aria-hidden="true">
       <button type="button" id="closeInfoBtn" tabindex="-1"></button>
+    </div>
+
+    <div id="pwaUpdateToast" class="pwa-toast" role="status" aria-live="polite" style="display: none;">
+      <span class="pwa-toast-text">Update tersedia!</span>
+      <button type="button" id="pwaReloadBtn" class="pwa-reload-btn">Muat ulang</button>
     </div>
   </div>
 
