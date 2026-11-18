@@ -219,6 +219,11 @@
     pwaBannerCloseBtn: document.getElementById('pwaBannerCloseBtn'),
     pwaGuideModal: document.getElementById('pwaGuideModal'),
     closePwaGuideBtn: document.getElementById('closePwaGuideBtn'),
+    confirmPwaGuideBtn: document.getElementById('confirmPwaGuideBtn'),
+    pwaInAppAlert: document.getElementById('pwaInAppAlert'),
+    pwaGuideAndroid: document.getElementById('pwaGuideAndroid'),
+    pwaGuideIos: document.getElementById('pwaGuideIos'),
+    pwaGuideDesktop: document.getElementById('pwaGuideDesktop'),
     menuInstallPwaBtn: document.getElementById('menuInstallPwaBtn'),
     menuTestPwaToastBtn: document.getElementById('menuTestPwaToastBtn'),
   };
@@ -2162,7 +2167,36 @@
     const PWA_DISMISSED_KEY = 'connect4_pwa_banner_dismissed';
     let deferredInstallPrompt = null;
 
+    function switchPwaGuideTab(tabName) {
+      if (!els.pwaGuideModal) return;
+      const tabBtns = els.pwaGuideModal.querySelectorAll('[data-pwa-tab]');
+      tabBtns.forEach(btn => {
+        const isActive = btn.dataset.pwaTab === tabName;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      if (els.pwaGuideAndroid) els.pwaGuideAndroid.style.display = tabName === 'android' ? 'block' : 'none';
+      if (els.pwaGuideIos) els.pwaGuideIos.style.display = tabName === 'ios' ? 'block' : 'none';
+      if (els.pwaGuideDesktop) els.pwaGuideDesktop.style.display = tabName === 'desktop' ? 'block' : 'none';
+    }
+
     function openPwaGuideModal() {
+      const ua = typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '';
+      const isIos = /iphone|ipad|ipod/i.test(ua);
+      const isAndroid = /android/i.test(ua);
+      const isInApp = /fban|fbav|instagram|line|micromessenger|whatsapp/i.test(ua);
+
+      if (els.pwaInAppAlert) {
+        els.pwaInAppAlert.style.display = isInApp ? 'flex' : 'none';
+      }
+      if (isIos) {
+        switchPwaGuideTab('ios');
+      } else if (isAndroid) {
+        switchPwaGuideTab('android');
+      } else {
+        switchPwaGuideTab('desktop');
+      }
       openModal(els.pwaGuideModal);
     }
 
@@ -2223,7 +2257,20 @@
     if (els.closePwaGuideBtn) {
       els.closePwaGuideBtn.addEventListener('click', () => closeModal(els.pwaGuideModal));
     }
+    if (els.confirmPwaGuideBtn) {
+      els.confirmPwaGuideBtn.addEventListener('click', () => {
+        playSfx('click');
+        closeModal(els.pwaGuideModal);
+      });
+    }
     if (els.pwaGuideModal) {
+      const pwaTabs = els.pwaGuideModal.querySelectorAll('[data-pwa-tab]');
+      pwaTabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          playSfx('click');
+          switchPwaGuideTab(btn.dataset.pwaTab);
+        });
+      });
       els.pwaGuideModal.addEventListener('click', (e) => {
         if (e.target === els.pwaGuideModal) closeModal(els.pwaGuideModal);
       });

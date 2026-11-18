@@ -1,5 +1,5 @@
 // Connect-Four AI — Service Worker (Offline & Precache)
-const CACHE_NAME = 'connect4-v1';
+const CACHE_NAME = 'connect4-v2';
 
 const PRECACHE_ASSETS = [
   './',

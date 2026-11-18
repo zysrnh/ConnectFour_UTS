@@ -2,12 +2,14 @@
   "name": "Connect-Four AI",
   "short_name": "Connect4 AI",
   "description": "Game Connect-Four interaktif dengan AI Minimax dan Alpha-Beta Pruning. Dukungan mode 2P, 4-Player, dan papan Obstacle.",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#FFC25E",
   "background_color": "#FFC25E",
+  "prefer_related_applications": false,
   "categories": ["games", "entertainment"],
   "icons": [
     {

@@ -664,28 +664,102 @@
 
     <!-- PWA GUIDE MODAL -->
     <div id="pwaGuideModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pwaGuideHeading" style="display: none;">
-      <div class="modal-card">
+      <div class="modal-card pwa-guide-modal-card">
         <div class="modal-header">
-          <h3 id="pwaGuideHeading" class="modal-title">Panduan Instalasi PWA</h3>
+          <h3 id="pwaGuideHeading" class="modal-title">Cara Pasang Aplikasi (PWA)</h3>
           <button type="button" id="closePwaGuideBtn" class="modal-close-btn" aria-label="Tutup panduan">&times;</button>
         </div>
+
+        <div class="tab-bar pwa-guide-tabs" role="tablist" aria-label="Pilih jenis perangkat">
+          <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-pwa-tab="android">📱 Android</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-pwa-tab="ios">🍎 iPhone / iPad</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-pwa-tab="desktop">💻 Laptop / PC</button>
+        </div>
+
         <div class="modal-body pwa-guide-body">
-          <div class="pwa-guide-card">
-            <h4>Mengapa fitur PWA butuh Localhost atau HTTPS?</h4>
-            <p>Aturan keamanan browser mewajibkan <em>Service Worker</em> dijalankan melalui koneksi aman (<strong>HTTPS</strong> atau <strong>http://localhost</strong>). Jika dibuka langsung lewat file (<code>file:///</code>), browser mematikan instalasi otomatis.</p>
+          <div id="pwaInAppAlert" class="pwa-inapp-alert" style="display: none;">
+            <span class="alert-icon" aria-hidden="true">⚠️</span>
+            <div class="alert-text">
+              <strong>Terbuka di Browser WhatsApp / Medsos</strong>
+              <p>Ketuk titik tiga di pojok kanan atas layar HP lalu pilih <em>"Buka di Chrome"</em> atau <em>"Buka di Safari"</em> agar bisa dipasang ke layar utama.</p>
+            </div>
           </div>
-          <div class="pwa-guide-steps">
-            <h4>Langkah Mudah Menjalankan &amp; Memasang PWA:</h4>
-            <ol>
-              <li>Buka terminal di folder project lalu jalankan server lokal:
-                <pre><code>python -m http.server 8080</code></pre>
-                atau
-                <pre><code>npx serve .</code></pre>
-              </li>
-              <li>Buka browser di <strong>http://localhost:8080</strong> (atau buka link GitHub Pages).</li>
-              <li>Klik ikon <strong>⬇ Instal</strong> di pojok kanan address bar browser (atau tombol <strong>⬇ Instal</strong> di bar atas game).</li>
-            </ol>
+
+          <!-- PANDUAN ANDROID -->
+          <div id="pwaGuideAndroid" class="pwa-tab-content active">
+            <div class="pwa-guide-steps-list">
+              <div class="guide-step-card">
+                <span class="step-num">1</span>
+                <div class="step-text">
+                  <strong>Buka di Google Chrome</strong>
+                  <p>Pastikan membuka link langsung di browser <strong>Chrome</strong> asli, bukan di dalam chat WhatsApp.</p>
+                </div>
+              </div>
+              <div class="guide-step-card">
+                <span class="step-num">2</span>
+                <div class="step-text">
+                  <strong>Ketuk Menu Titik Tiga (<span class="chip-symbol">⋮</span>)</strong>
+                  <p>Ada di pojok kanan atas browser Chrome kamu.</p>
+                </div>
+              </div>
+              <div class="guide-step-card">
+                <span class="step-num">3</span>
+                <div class="step-text">
+                  <strong>Pilih "Instal Aplikasi" / "Tambahkan ke Layar Utama"</strong>
+                  <p>Ikon <strong>Connect-Four AI</strong> akan langsung terpasang di layar utama HP kamu seperti aplikasi biasa!</p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- PANDUAN IPHONE / IPAD -->
+          <div id="pwaGuideIos" class="pwa-tab-content" style="display: none;">
+            <div class="pwa-guide-steps-list">
+              <div class="guide-step-card">
+                <span class="step-num">1</span>
+                <div class="step-text">
+                  <strong>Buka di Browser Safari</strong>
+                  <p>Buka link game langsung menggunakan browser bawaan <strong>Safari</strong>.</p>
+                </div>
+              </div>
+              <div class="guide-step-card">
+                <span class="step-num">2</span>
+                <div class="step-text">
+                  <strong>Ketuk Tombol Bagikan (<span class="chip-symbol">⎋</span>)</strong>
+                  <p>Ikon kotak dengan panah ke atas di bilah bawah Safari.</p>
+                </div>
+              </div>
+              <div class="guide-step-card">
+                <span class="step-num">3</span>
+                <div class="step-text">
+                  <strong>Pilih "Tambahkan ke Layar Utama" (<span class="chip-symbol">+</span>)</strong>
+                  <p>Geser ke bawah, pilih <em>Add to Home Screen</em> lalu ketuk <strong>Tambah</strong> di kanan atas.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANDUAN LAPTOP / PC -->
+          <div id="pwaGuideDesktop" class="pwa-tab-content" style="display: none;">
+            <div class="pwa-guide-steps-list">
+              <div class="guide-step-card">
+                <span class="step-num">1</span>
+                <div class="step-text">
+                  <strong>Akses via HTTPS atau Localhost</strong>
+                  <p>Buka link GitHub Pages atau jalankan server lokal (<code>python -m http.server 8080</code>).</p>
+                </div>
+              </div>
+              <div class="guide-step-card">
+                <span class="step-num">2</span>
+                <div class="step-text">
+                  <strong>Klik Ikon Install (<span class="chip-symbol">⬇</span>) di Address Bar</strong>
+                  <p>Klik ikon install di pojok kanan bilah alamat browser atau tekan tombol <strong>⬇ Instal</strong> di bar atas.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="confirmPwaGuideBtn" class="btn-primary full-width">Saya Mengerti</button>
         </div>
       </div>
     </div>
