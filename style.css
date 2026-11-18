@@ -111,6 +111,18 @@ button {
   gap: 10px;
 }
 
+.brand-logo-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
 .brand-dots {
   display: inline-flex;
   gap: 4px;
@@ -2636,6 +2648,11 @@ button {
     gap: 6px;
   }
 
+  .brand-logo-img {
+    width: 22px;
+    height: 22px;
+  }
+
   .brand-title {
     font-size: 0.78rem;
     white-space: nowrap;
@@ -2825,6 +2842,16 @@ button {
   font-size: 1.8rem;
   line-height: 1;
   flex-shrink: 0;
+}
+
+.pwa-banner-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  flex-shrink: 0;
+  object-fit: cover;
 }
 
 .pwa-banner-text {

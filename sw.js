@@ -1,5 +1,5 @@
 // Connect-Four AI — Service Worker (Offline & Precache)
-const CACHE_NAME = 'connect4-v3';
+const CACHE_NAME = 'connect4-v4';
 
 const PRECACHE_ASSETS = [
   './',
@@ -8,6 +8,9 @@ const PRECACHE_ASSETS = [
   './js/ai.js',
   './js/app.js',
   './manifest.webmanifest',
+  './favicon.ico',
+  './icons/favicon-32x32.png',
+  './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-192.png',
