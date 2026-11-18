@@ -118,6 +118,7 @@
     goSetupBtn: document.getElementById('goSetupBtn'),
     openRulesBtn: document.getElementById('openRulesBtn'),
     openInfoBtn: document.getElementById('openInfoBtn'),
+    openQrBtn: document.getElementById('openQrBtn'),
 
     // Setup Menu
     backHomeBtn: document.getElementById('backHomeBtn'),
@@ -224,6 +225,10 @@
     pwaGuideAndroid: document.getElementById('pwaGuideAndroid'),
     pwaGuideIos: document.getElementById('pwaGuideIos'),
     pwaGuideDesktop: document.getElementById('pwaGuideDesktop'),
+    qrModal: document.getElementById('qrModal'),
+    closeQrModalBtn: document.getElementById('closeQrModalBtn'),
+    confirmQrModalBtn: document.getElementById('confirmQrModalBtn'),
+    menuQrModalBtn: document.getElementById('menuQrModalBtn'),
     menuInstallPwaBtn: document.getElementById('menuInstallPwaBtn'),
     menuTestPwaToastBtn: document.getElementById('menuTestPwaToastBtn'),
   };
@@ -2100,6 +2105,38 @@
       if (e.target === els.infoModal) closeModal(els.infoModal);
     });
 
+    // QR Code Modal
+    function openQrModal() {
+      playSfx('click');
+      openModal(els.qrModal);
+    }
+    if (els.openQrBtn) {
+      els.openQrBtn.addEventListener('click', openQrModal);
+    }
+    if (els.menuQrModalBtn) {
+      els.menuQrModalBtn.addEventListener('click', () => {
+        closeOverflowMenu();
+        openQrModal();
+      });
+    }
+    if (els.closeQrModalBtn) {
+      els.closeQrModalBtn.addEventListener('click', () => {
+        playSfx('click');
+        closeModal(els.qrModal);
+      });
+    }
+    if (els.confirmQrModalBtn) {
+      els.confirmQrModalBtn.addEventListener('click', () => {
+        playSfx('click');
+        closeModal(els.qrModal);
+      });
+    }
+    if (els.qrModal) {
+      els.qrModal.addEventListener('click', (e) => {
+        if (e.target === els.qrModal) closeModal(els.qrModal);
+      });
+    }
+
     if (els.postGamePanel) {
       els.postGamePanel.addEventListener('click', (e) => {
         const tabBtn = e.target.closest ? e.target.closest('[data-analysis-tab]') : null;
@@ -2137,6 +2174,10 @@
         }
         if (els.pwaGuideModal && els.pwaGuideModal.style.display === 'flex') {
           closeModal(els.pwaGuideModal);
+          return;
+        }
+        if (els.qrModal && els.qrModal.style.display === 'flex') {
+          closeModal(els.qrModal);
           return;
         }
       }

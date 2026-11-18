@@ -3040,6 +3040,60 @@ button {
   }
 }
 
+/* QR Modal */
+.qr-modal-card {
+  max-width: 440px;
+  text-align: center;
+}
+
+.qr-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.qr-preview-wrapper {
+  padding: 12px;
+  background-color: #ffffff;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.qr-modal-image {
+  display: block;
+  width: 240px;
+  height: 240px;
+  image-rendering: pixelated;
+}
+
+.qr-modal-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+
+.qr-modal-link-box {
+  padding: 6px 12px;
+  background-color: var(--surface-soft);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  word-break: break-all;
+}
+
+.qr-modal-url {
+  font-family: monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--blue);
+}
+
 /* =========================================================
    REDUCED MOTION ACCESSIBILITY
    ========================================================= */

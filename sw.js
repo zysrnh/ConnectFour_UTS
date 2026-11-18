@@ -1,5 +1,5 @@
 // Connect-Four AI — Service Worker (Offline & Precache)
-const CACHE_NAME = 'connect4-v2';
+const CACHE_NAME = 'connect4-v3';
 
 const PRECACHE_ASSETS = [
   './',
@@ -12,7 +12,8 @@ const PRECACHE_ASSETS = [
   './icons/icon-512.png',
   './icons/icon-maskable-192.png',
   './icons/icon-maskable-512.png',
-  './icons/icon.svg'
+  './icons/icon.svg',
+  './qr/qr_connectfour.png'
 ];
 
 self.addEventListener('install', (event) => {
